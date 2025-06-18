@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { MatrixCell as MatrixCellType } from '../utils/matrixGenerator';
 
 interface MatrixCellProps {
@@ -18,19 +18,55 @@ const MatrixCell: React.FC<MatrixCellProps> = ({
   disabled = false,
   isObject = false
 }) => {
+  const displayValue = typeof cell === 'object' ? cell.value : cell;
+  const [inputValue, setInputValue] = useState(displayValue.toString());
+
+  // Update input value when cell value changes externally
+  useEffect(() => {
+    setInputValue(displayValue.toString());
+  }, [displayValue]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isObject) return; // Don't allow editing objects
     
-    const inputValue = e.target.value;
-    const value = parseInt(inputValue) || 0;
+    const value = e.target.value;
+    setInputValue(value);
     
-    // Allow any positive integer up to 9,999,999
-    const validValue = Math.max(1, Math.min(9999999, value));
-    onCellChange(row, col, validValue);
+    // Allow empty value during typing
+    if (value === '') {
+      return;
+    }
+    
+    const numValue = parseInt(value);
+    if (!isNaN(numValue)) {
+      // Allow any positive integer up to 9,999,999 during typing
+      const validValue = Math.max(1, Math.min(9999999, numValue));
+      onCellChange(row, col, validValue);
+    }
+  };
+
+  const handleBlur = () => {
+    if (isObject) return;
+    
+    // Apply validation when user finishes editing
+    const numValue = parseInt(inputValue);
+    if (isNaN(numValue) || numValue < 1) {
+      setInputValue(displayValue.toString());
+    } else {
+      const validValue = Math.max(1, Math.min(9999999, numValue));
+      setInputValue(validValue.toString());
+      onCellChange(row, col, validValue);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (isObject) return; // Don't allow navigation for objects
+    
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleBlur();
+      return;
+    }
     
     // Allow navigation with arrow keys
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || 
@@ -82,15 +118,14 @@ const MatrixCell: React.FC<MatrixCellProps> = ({
     return className;
   };
 
-  const displayValue = typeof cell === 'object' ? cell.value : cell;
-
   return (
     <div className="matrix-cell">
       <input
         type={isObject ? "text" : "number"}
         className={getInputClassName()}
-        value={displayValue}
+        value={inputValue}
         onChange={handleChange}
+        onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         disabled={disabled || isObject}
         min={isObject ? undefined : "1"}

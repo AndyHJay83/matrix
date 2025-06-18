@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface TargetInputProps {
   target: number;
@@ -13,14 +13,39 @@ const TargetInput: React.FC<TargetInputProps> = ({
   onGenerate,
   disabled = false
 }) => {
+  const [inputValue, setInputValue] = useState(target.toString());
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value) || 0;
-    onTargetChange(value);
+    const value = e.target.value;
+    setInputValue(value);
+    
+    // Allow empty value during typing
+    if (value === '') {
+      return;
+    }
+    
+    const numValue = parseInt(value);
+    if (!isNaN(numValue)) {
+      onTargetChange(numValue);
+    }
+  };
+
+  const handleBlur = () => {
+    // Apply validation when user finishes editing
+    const numValue = parseInt(inputValue);
+    if (isNaN(numValue) || numValue < 1) {
+      setInputValue(target.toString());
+    } else {
+      const validValue = Math.max(1, Math.min(9999999, numValue));
+      setInputValue(validValue.toString());
+      onTargetChange(validValue);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      handleBlur();
       onGenerate();
     }
   };
@@ -37,8 +62,9 @@ const TargetInput: React.FC<TargetInputProps> = ({
           id="target-input"
           type="number"
           className="target-input"
-          value={target}
+          value={inputValue}
           onChange={handleChange}
+          onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           disabled={disabled}
           min="1"
@@ -50,7 +76,7 @@ const TargetInput: React.FC<TargetInputProps> = ({
         <button
           className="btn btn-primary"
           onClick={onGenerate}
-          disabled={disabled || target < 1 || target > 9999999}
+          disabled={disabled || !isValidTarget}
         >
           Generate Matrix
         </button>
