@@ -63,26 +63,41 @@ export function generateForcingMatrix(target: number, variance: number = 0.5): M
   // Calculate variance multiplier (0 = minimal, 1 = maximum)
   const varianceMultiplier = Math.max(0, Math.min(1, variance));
   
-  // Define variance ranges based on target size, but ensure they're integers
-  const maxVariance = Math.max(1, Math.floor(target / 20)); // Scale with target
-  const varianceRange = Math.floor(maxVariance * varianceMultiplier);
-  
-  // Use integer-only variance calculations to maintain forcing property
-  seeds[0] = baseValue - varianceRange * 2;  // Much lower
-  seeds[1] = baseValue - varianceRange;      // Lower
-  seeds[2] = baseValue + varianceRange;      // Higher
-  seeds[3] = baseValue + varianceRange;      // Higher
-  seeds[4] = baseValue + varianceRange * 2;  // Much higher
-  seeds[5] = baseValue - varianceRange;      // Lower
-  seeds[6] = baseValue + varianceRange;      // Higher
-  seeds[7] = baseValue - varianceRange * 2;  // Much lower
-  
-  // Distribute remainder to make sum exactly target
-  for (let i = 0; i < remainder; i++) {
-    seeds[2 + i] += 1; // Add to middle seeds
+  // For variance = 0, use minimal variance (all values close to base)
+  if (varianceMultiplier === 0) {
+    // Distribute the target evenly with minimal variance
+    for (let i = 0; i < 8; i++) {
+      seeds[i] = baseValue;
+    }
+    // Distribute remainder
+    for (let i = 0; i < remainder; i++) {
+      seeds[i] += 1;
+    }
+  } else {
+    // For variance > 0, use a different approach that maintains forcing property
+    // Use a systematic pattern that ensures all permutations still work
+    
+    // Calculate variance range based on target size
+    const maxVariance = Math.max(1, Math.floor(target / 40)); // Smaller variance to maintain accuracy
+    const varianceRange = Math.floor(maxVariance * varianceMultiplier);
+    
+    // Create a balanced pattern that maintains the forcing property
+    seeds[0] = baseValue - varianceRange;
+    seeds[1] = baseValue - varianceRange;
+    seeds[2] = baseValue + varianceRange;
+    seeds[3] = baseValue + varianceRange;
+    seeds[4] = baseValue + varianceRange;
+    seeds[5] = baseValue - varianceRange;
+    seeds[6] = baseValue + varianceRange;
+    seeds[7] = baseValue - varianceRange;
+    
+    // Distribute remainder to make sum exactly target
+    for (let i = 0; i < remainder; i++) {
+      seeds[2 + i] += 1;
+    }
   }
   
-  // Ensure all seeds are positive and adjust if needed
+  // Ensure all seeds are positive
   const minSeed = Math.min(...seeds);
   if (minSeed < 1) {
     const adjustment = 1 - minSeed;
