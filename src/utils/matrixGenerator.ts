@@ -51,18 +51,19 @@ function checkLatinSquareProperty(matrix: Matrix, target: number): boolean {
 export function generateForcingMatrix(target: number): Matrix {
   // Bart Nijs algorithm - guaranteed to work for any target
   
-  // Step 1: Create a base matrix where all permutations sum to 10
-  // This is a known working Latin square
+  // Step 1: Create a base matrix where all values are equal
+  // This guarantees all permutations sum to the same value
+  const baseValue = 1;
   const baseMatrix = [
-    [1, 2, 3, 4],
-    [2, 3, 4, 1],
-    [3, 4, 1, 2],
-    [4, 1, 2, 3]
+    [baseValue, baseValue, baseValue, baseValue],
+    [baseValue, baseValue, baseValue, baseValue],
+    [baseValue, baseValue, baseValue, baseValue],
+    [baseValue, baseValue, baseValue, baseValue]
   ];
   
   // Step 2: Calculate the adjustment needed to reach the target
-  // All permutations in the base matrix sum to 10
-  const baseSum = 10;
+  // All permutations in the base matrix sum to 4 (4 * baseValue)
+  const baseSum = 4 * baseValue;
   const adjustment = target - baseSum;
   
   // Step 3: Apply the adjustment to all cells
