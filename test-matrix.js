@@ -1,5 +1,5 @@
 // Simple test to verify matrix generation
-const { generateForcingMatrix, validateMatrix } = require('./dist/utils/matrixGenerator.js');
+import { generateForcingMatrix, validateMatrix } from './dist/utils/matrixGenerator.js';
 
 console.log('Testing matrix generation...\n');
 
