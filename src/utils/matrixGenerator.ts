@@ -64,14 +64,15 @@ export function generateForcingMatrix(target: number): Matrix {
   // Step 2: Calculate the adjustment needed to reach the target
   // All permutations in the base matrix sum to 4 (4 * baseValue)
   const baseSum = 4 * baseValue;
-  const adjustment = target - baseSum;
+  const totalAdjustment = target - baseSum;
+  const adjustmentPerCell = totalAdjustment / 4;
   
   // Step 3: Apply the adjustment to all cells
   const matrix: Matrix = [];
   for (let row = 0; row < 4; row++) {
     matrix[row] = [];
     for (let col = 0; col < 4; col++) {
-      const value = baseMatrix[row][col] + adjustment;
+      const value = baseMatrix[row][col] + adjustmentPerCell;
       matrix[row][col] = {
         value,
         isUserEdited: false,
