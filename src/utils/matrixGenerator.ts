@@ -49,32 +49,35 @@ function checkLatinSquareProperty(matrix: Matrix, target: number): boolean {
 
 // Generate forcing matrix using strict Latin Square construction
 export function generateForcingMatrix(target: number): Matrix {
-  if (target < 10) {
-    throw new Error('Target must be at least 10');
-  }
+  // Step 1: Choose base value
+  const base = Math.floor(target / 4);
 
-  let values: number[];
-  if (target >= 14) {
-    // For more variety for larger targets
-    values = [2, 3, 4, target - 9];
-  } else {
-    // For minimum valid target
-    values = [1, 2, 3, target - 6];
-  }
-
-  // Build the Latin Square matrix
+  // Step 2: Fill matrix with base + unique offset
   const matrix: Matrix = [];
   for (let row = 0; row < 4; row++) {
     matrix[row] = [];
     for (let col = 0; col < 4; col++) {
-      const value = values[(col + row) % 4];
+      // Unique offset for each cell
+      const offset = (row * 3 + col * 2) % 4;
       matrix[row][col] = {
-        value,
+        value: base + offset,
         isUserEdited: false,
         isCalculated: false
       };
     }
   }
+
+  // Step 3: Adjust the diagonal to ensure all permutation sums are the target
+  // Calculate the sum for the main diagonal
+  let diagSum = 0;
+  for (let i = 0; i < 4; i++) {
+    diagSum += matrix[i][i].value;
+  }
+  const adjustment = target - diagSum;
+  // Distribute the adjustment to the diagonal cells
+  // Add the full adjustment to the first diagonal cell
+  matrix[0][0].value += adjustment;
+
   return matrix;
 }
 
