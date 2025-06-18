@@ -95,6 +95,9 @@ function App() {
 
   const handleReset = () => {
     if (target >= 1 && target <= 9999999) {
+      // Clear all user edits
+      setUserEdits({});
+      // Generate a fresh matrix
       const newMatrix = resetMatrix(target, variance);
       setMatrix(newMatrix);
     }
