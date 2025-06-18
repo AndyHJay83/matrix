@@ -375,6 +375,14 @@ export async function shareMatrix(matrix: Matrix, target: number): Promise<void>
 export function matchMatrixLength(matrix: Matrix, target: number): Matrix {
   const targetDigits = target.toString().length;
   
+  // Check if target is too small for the digit length
+  const minTargetForDigits = Math.pow(10, targetDigits - 1);
+  if (target < minTargetForDigits) {
+    // Target is too small for the digit length, return original matrix
+    console.warn(`Target ${target} is too small for ${targetDigits} digits. Minimum required: ${minTargetForDigits}`);
+    return matrix;
+  }
+  
   // First, adjust individual values to match digit length
   const adjustedMatrix: Matrix = matrix.map(row =>
     row.map(cell => {
@@ -434,6 +442,11 @@ function recalculateForcingProperty(matrix: Matrix, target: number): Matrix {
   const rowSeeds = values[0].map((val, col) => val - values[0][0]);
   const colSeeds = values.map((row, rowIndex) => row[0] - values[0][0]);
   
+  // Find the minimum seed value to ensure all matrix values are positive
+  const minRowSeed = Math.min(...rowSeeds);
+  const minColSeed = Math.min(...colSeeds);
+  const minSeed = Math.min(minRowSeed, minColSeed);
+  
   // Adjust to maintain target sum
   const totalSeeds = rowSeeds.reduce((a, b) => a + b, 0) + colSeeds.reduce((a, b) => a + b, 0);
   const baseValue = Math.floor(target / 8);
@@ -454,6 +467,35 @@ function recalculateForcingProperty(matrix: Matrix, target: number): Matrix {
     }
   }
   
+  // Ensure all matrix values will be positive
+  const minMatrixValue = Math.min(...rowSeeds) + Math.min(...colSeeds);
+  if (minMatrixValue < 1) {
+    // Need to shift all seeds up to make minimum value 1
+    const shift = 1 - minMatrixValue;
+    for (let i = 0; i < 4; i++) {
+      rowSeeds[i] += shift;
+      colSeeds[i] += shift;
+    }
+    
+    // Re-adjust to maintain target sum
+    const newTotal = rowSeeds.reduce((a, b) => a + b, 0) + colSeeds.reduce((a, b) => a + b, 0);
+    const newDiff = target - newTotal;
+    
+    // Distribute the difference
+    if (newDiff !== 0) {
+      const adjustment = Math.floor(newDiff / 8);
+      const extraAdjustment = newDiff % 8;
+      
+      for (let i = 0; i < 4; i++) {
+        rowSeeds[i] += adjustment;
+        colSeeds[i] += adjustment;
+        if (i < extraAdjustment) {
+          rowSeeds[i] += 1;
+        }
+      }
+    }
+  }
+  
   // Rebuild matrix
   const newMatrix: Matrix = [];
   for (let row = 0; row < 4; row++) {
@@ -461,7 +503,7 @@ function recalculateForcingProperty(matrix: Matrix, target: number): Matrix {
     for (let col = 0; col < 4; col++) {
       const value = rowSeeds[row] + colSeeds[col];
       newMatrix[row][col] = {
-        value,
+        value: Math.max(1, value), // Ensure minimum value of 1
         isUserEdited: false,
         isCalculated: true
       };

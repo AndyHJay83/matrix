@@ -112,6 +112,15 @@ function App() {
 
   const handleMatchLength = () => {
     if (target >= 1 && target <= 9999999 && matrix.length > 0) {
+      const targetDigits = target.toString().length;
+      const minTargetForDigits = Math.pow(10, targetDigits - 1);
+      
+      if (target < minTargetForDigits) {
+        // Show warning to user
+        alert(`Target ${target} is too small for ${targetDigits} digits. Minimum required: ${minTargetForDigits}`);
+        return;
+      }
+      
       const newMatrix = matchMatrixLength(matrix, target);
       setMatrix(newMatrix);
       // Clear user edits since we're recalculating
