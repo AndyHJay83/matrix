@@ -85,75 +85,79 @@ export function generateForcingMatrix(target: number, variance: number = 0.5): M
     // Use different patterns for different variance levels to avoid repetition
     
     if (varianceMultiplier >= 0.8) {
-      // High variance: use more dramatic differences and ensure uniqueness
-      // Guarantee all 16 numbers are unique by using strictly increasing row/col seeds
-      // r0 < r1 < r2 < r3, c0 < c1 < c2 < c3, and all (ri+cj) unique
-      // Dynamically cap spread so all values are positive
-      const minAllowed = 1;
-      let maxSpread = 2 * baseValue - minAllowed;
-      maxSpread = Math.max(0, maxSpread); // never negative
+      // Bart-style high variance: organic-looking numbers with dramatic variance
+      // Use "messy" seed offsets and allow negative values for dramatic effect
       
-      // Scale variance based on target size
-      let varianceDivisor = 20; // default conservative
-      if (target >= 5000) {
-        varianceDivisor = 15; // very dramatic for 5+ digits
+      // Calculate base variance based on target size
+      let baseVariance = Math.floor(target / 20); // conservative base
+      if (target >= 1000000) { // 7 digits
+        baseVariance = Math.floor(target / 8);
+      } else if (target >= 100000) { // 6 digits
+        baseVariance = Math.floor(target / 12);
+      } else if (target >= 5000) {
+        baseVariance = Math.floor(target / 15);
       } else if (target >= 1000) {
-        varianceDivisor = 18; // more dramatic for 4+ digits
+        baseVariance = Math.floor(target / 18);
       }
       
-      let requestedSpread = Math.floor(target / varianceDivisor); // allow as low as zero
-      let spread = Math.min(requestedSpread, maxSpread);
-      let usedMinimal = false;
-      if (spread === 0) {
-        // Fallback to minimal-variance algorithm for small targets
-        for (let i = 0; i < 8; i++) {
-          seeds[i] = baseValue;
+      // Create "organic" seed offsets (not clean multiples)
+      const organicOffsets = [
+        Math.floor(baseVariance * 0.8),      // 0.8x
+        Math.floor(baseVariance * -1.2),     // -1.2x (negative for drama)
+        Math.floor(baseVariance * 0.3),      // 0.3x
+        Math.floor(baseVariance * 1.7),      // 1.7x
+        Math.floor(baseVariance * 1.1),      // 1.1x
+        Math.floor(baseVariance * -0.9),     // -0.9x (negative)
+        Math.floor(baseVariance * 0.6),      // 0.6x
+        Math.floor(baseVariance * 1.4)       // 1.4x
+      ];
+      
+      // Add some "jitter" to make numbers more organic
+      const jitter = Math.max(1, Math.floor(baseVariance * 0.1));
+      for (let i = 0; i < 8; i++) {
+        organicOffsets[i] += Math.floor(Math.random() * jitter) - Math.floor(jitter / 2);
+      }
+      
+      // Create seeds with organic offsets
+      for (let i = 0; i < 8; i++) {
+        seeds[i] = baseValue + organicOffsets[i];
+      }
+      
+      // Adjust to sum exactly to target
+      let currentSum = seeds.reduce((sum, seed) => sum + seed, 0);
+      let diff = target - currentSum;
+      
+      // Distribute the difference organically (not evenly)
+      const distribution = [0.3, 0.2, 0.15, 0.1, 0.1, 0.05, 0.05, 0.05]; // weighted distribution
+      for (let i = 0; i < 8; i++) {
+        seeds[i] += Math.floor(diff * distribution[i]);
+      }
+      
+      // Final adjustment to ensure exact sum
+      currentSum = seeds.reduce((sum, seed) => sum + seed, 0);
+      seeds[7] += (target - currentSum);
+      
+      // Ensure all matrix values are positive (but allow negative seeds)
+      const rowSeeds = seeds.slice(0, 4);
+      const colSeeds = seeds.slice(4, 8);
+      let minValue = Math.min(...rowSeeds.map(r => Math.min(...colSeeds.map(c => r + c))));
+      
+      if (minValue < 1) {
+        // Shift all seeds up to make minimum value 1
+        const shift = 1 - minValue;
+        for (let i = 0; i < 4; i++) {
+          rowSeeds[i] += shift;
         }
-        for (let i = 0; i < remainder; i++) {
-          seeds[i] += 1;
+        for (let i = 0; i < 4; i++) {
+          colSeeds[i] += shift;
         }
-        usedMinimal = true;
-      } else {
-        let rowBase = baseValue - 2 * spread;
-        let colBase = baseValue + spread;
-        seeds[0] = rowBase;
-        seeds[1] = rowBase + spread;
-        seeds[2] = rowBase + 2 * spread;
-        seeds[3] = rowBase + 3 * spread;
-        seeds[4] = colBase;
-        seeds[5] = colBase + spread + 1;
-        seeds[6] = colBase + 2 * spread + 2;
-        seeds[7] = colBase + 3 * spread + 3;
-        // Adjust all seeds to sum to target
-        let currentSum = seeds.reduce((sum, seed) => sum + seed, 0);
-        let diff = target - currentSum;
-        for (let i = 0; i < Math.abs(diff); i++) {
-          seeds[i % 8] += diff > 0 ? 1 : -1;
-        }
-        // Ensure all seeds are positive
-        let minSeed = Math.min(...seeds);
-        if (minSeed < 1) {
-          const adjustment = 1 - minSeed;
-          for (let i = 0; i < 8; i++) {
-            seeds[i] += adjustment;
-          }
-          // Adjust the last seed to maintain target sum
-          seeds[7] -= adjustment * 8;
-        }
-        // Final check: if any matrix value is < 1, shift all up
-        const rowSeeds = seeds.slice(0, 4);
-        const colSeeds = seeds.slice(4, 8);
-        let minValue = Math.min(...rowSeeds.map(r => Math.min(...colSeeds.map(c => r + c))));
-        if (minValue < 1) {
-          // Fallback to minimal-variance algorithm
-          for (let i = 0; i < 8; i++) {
-            seeds[i] = baseValue;
-          }
-          for (let i = 0; i < remainder; i++) {
-            seeds[i] += 1;
-          }
-          usedMinimal = true;
-        }
+        // Adjust last colSeed to maintain sum
+        const newSeeds = [...rowSeeds, ...colSeeds];
+        const newSum = newSeeds.reduce((a, b) => a + b, 0);
+        colSeeds[3] += (target - newSum);
+        // Update seeds array
+        for (let i = 0; i < 4; i++) seeds[i] = rowSeeds[i];
+        for (let i = 0; i < 4; i++) seeds[4 + i] = colSeeds[i];
       }
     } else {
       // Medium variance: use balanced pattern
