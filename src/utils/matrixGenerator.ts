@@ -71,7 +71,7 @@ export function generateForcingMatrix(target: number): Matrix {
         matrix[row][col] = {
           value,
           isUserEdited: false,
-          isCalculated: false
+          isCalculated: false  // All cells start as not calculated
         };
       }
     }
@@ -136,7 +136,7 @@ function createSimpleLatinSquareMatrix(target: number): Matrix {
       matrix[row][col] = {
         value: Math.max(1, value),
         isUserEdited: false,
-        isCalculated: false
+        isCalculated: false  // All cells are not calculated
       };
     }
   }
@@ -177,6 +177,14 @@ export function recalculateMatrix(
   
   // Try to adjust the matrix to maintain Latin Square property
   if (adjustMatrixForLatinSquare(newMatrix, target)) {
+    // Mark all non-user-edited cells as not calculated (they're part of the algorithm)
+    for (let row = 0; row < 4; row++) {
+      for (let col = 0; col < 4; col++) {
+        if (!newMatrix[row][col].isUserEdited) {
+          newMatrix[row][col].isCalculated = false;
+        }
+      }
+    }
     return newMatrix;
   }
   
