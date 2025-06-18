@@ -43,6 +43,10 @@ const FlashcardView: React.FC<FlashcardViewProps> = ({ objects, onBack }) => {
   const rowObjects = getRowObjects(currentRow);
   const columnObjects = getColumnObjects(currentCol);
 
+  // Filter out the current object from row and column lists
+  const rowObjectsFiltered = rowObjects.filter((_, index) => index !== currentCol);
+  const columnObjectsFiltered = columnObjects.filter((_, index) => index !== currentRow);
+
   return (
     <div className="flashcard-view">
       <div className="flashcard-header">
@@ -75,16 +79,16 @@ const FlashcardView: React.FC<FlashcardViewProps> = ({ objects, onBack }) => {
         >
           <div className="flashcard-front">
             <h2>{currentObject}</h2>
-            <p>Click to reveal row and column objects</p>
+            <p>Click to reveal other objects in same row and column</p>
           </div>
           <div className="flashcard-back">
             <div className="flashcard-content">
               <h3>Row {currentRow + 1} Objects:</h3>
               <div className="object-list">
-                {rowObjects.map((obj, index) => (
+                {rowObjectsFiltered.map((obj, index) => (
                   <span 
                     key={index} 
-                    className={`object-item ${index === currentCol ? 'highlighted' : ''}`}
+                    className="object-item"
                   >
                     {obj}
                   </span>
@@ -93,10 +97,10 @@ const FlashcardView: React.FC<FlashcardViewProps> = ({ objects, onBack }) => {
               
               <h3>Column {currentCol + 1} Objects:</h3>
               <div className="object-list">
-                {columnObjects.map((obj, index) => (
+                {columnObjectsFiltered.map((obj, index) => (
                   <span 
                     key={index} 
-                    className={`object-item ${index === currentRow ? 'highlighted' : ''}`}
+                    className="object-item"
                   >
                     {obj}
                   </span>
