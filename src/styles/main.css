@@ -263,9 +263,16 @@ body {
 }
 
 .btn-success:hover {
-  background: #059669;
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  background: #0d9488;
+}
+
+.btn-info {
+  background: #0ea5e9;
+  color: white;
+}
+
+.btn-info:hover {
+  background: #0284c7;
 }
 
 .btn-danger {

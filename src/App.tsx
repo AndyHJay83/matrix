@@ -5,7 +5,8 @@ import {
   recalculateMatrix,
   validateMatrix,
   getValidationMessage,
-  resetMatrix
+  resetMatrix,
+  matchMatrixLength
 } from './utils/matrixGenerator';
 import TargetInput from './components/TargetInput';
 import MatrixGrid from './components/MatrixGrid';
@@ -106,6 +107,15 @@ function App() {
       // Generate a fresh matrix
       const newMatrix = resetMatrix(target, variance);
       setMatrix(newMatrix);
+    }
+  };
+
+  const handleMatchLength = () => {
+    if (target >= 1 && target <= 9999999 && matrix.length > 0) {
+      const newMatrix = matchMatrixLength(matrix, target);
+      setMatrix(newMatrix);
+      // Clear user edits since we're recalculating
+      setUserEdits({});
     }
   };
 
@@ -215,6 +225,7 @@ function App() {
                 matrix={matrix}
                 target={target}
                 onReset={handleReset}
+                onMatchLength={handleMatchLength}
                 isValid={isValid}
                 disabled={isGenerating}
               />

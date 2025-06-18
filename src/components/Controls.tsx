@@ -6,6 +6,7 @@ interface ControlsProps {
   matrix: Matrix;
   target: number;
   onReset: () => void;
+  onMatchLength: () => void;
   isValid: boolean;
   disabled?: boolean;
 }
@@ -14,6 +15,7 @@ const Controls: React.FC<ControlsProps> = ({
   matrix,
   target,
   onReset,
+  onMatchLength,
   isValid,
   disabled = false
 }) => {
@@ -65,6 +67,17 @@ const Controls: React.FC<ControlsProps> = ({
           disabled={disabled}
         >
           Reset Matrix
+        </button>
+        
+        <button
+          className="btn btn-info"
+          onClick={() => {
+            onMatchLength();
+            handleHapticFeedback();
+          }}
+          disabled={disabled || !isValid}
+        >
+          Match Length
         </button>
         
         <button

@@ -369,4 +369,104 @@ export async function shareMatrix(matrix: Matrix, target: number): Promise<void>
       console.error('Failed to copy to clipboard:', error);
     }
   }
+}
+
+// Adjust matrix values to match target number's digit length
+export function matchMatrixLength(matrix: Matrix, target: number): Matrix {
+  const targetDigits = target.toString().length;
+  
+  // First, adjust individual values to match digit length
+  const adjustedMatrix: Matrix = matrix.map(row =>
+    row.map(cell => {
+      const currentValue = cell.value;
+      const currentDigits = currentValue.toString().length;
+      
+      if (currentDigits === targetDigits) {
+        // Already correct length, keep as is
+        return cell;
+      } else if (currentDigits < targetDigits) {
+        // Need to add digits - create natural-looking numbers
+        const diff = targetDigits - currentDigits;
+        let newValue = currentValue;
+        
+        // Use a more sophisticated approach to create natural-looking numbers
+        for (let i = 0; i < diff; i++) {
+          // Use the last digit or a related digit to make it look natural
+          const lastDigit = newValue % 10;
+          const secondLastDigit = Math.floor(newValue / 10) % 10;
+          
+          // Create a natural progression
+          let nextDigit = (lastDigit + 1) % 10;
+          if (nextDigit === 0) nextDigit = 1; // Avoid leading zeros
+          
+          newValue = newValue * 10 + nextDigit;
+        }
+        
+        return {
+          ...cell,
+          value: newValue,
+          isCalculated: true
+        };
+      } else {
+        // Need to reduce digits - take first N digits
+        const newValue = parseInt(currentValue.toString().substring(0, targetDigits));
+        
+        return {
+          ...cell,
+          value: newValue,
+          isCalculated: true
+        };
+      }
+    })
+  );
+  
+  // Now recalculate to maintain the forcing property
+  return recalculateForcingProperty(adjustedMatrix, target);
+}
+
+// Helper function to recalculate matrix to maintain forcing property
+function recalculateForcingProperty(matrix: Matrix, target: number): Matrix {
+  // Extract current values
+  const values = matrix.map(row => row.map(cell => cell.value));
+  
+  // Calculate row and column seeds from current values
+  // We'll use the first row and first column as reference
+  const rowSeeds = values[0].map((val, col) => val - values[0][0]);
+  const colSeeds = values.map((row, rowIndex) => row[0] - values[0][0]);
+  
+  // Adjust to maintain target sum
+  const totalSeeds = rowSeeds.reduce((a, b) => a + b, 0) + colSeeds.reduce((a, b) => a + b, 0);
+  const baseValue = Math.floor(target / 8);
+  const remainder = target - (baseValue * 8);
+  
+  // Distribute remainder
+  for (let i = 0; i < 4; i++) {
+    rowSeeds[i] += baseValue;
+    colSeeds[i] += baseValue;
+  }
+  
+  // Add remainder to first few seeds
+  for (let i = 0; i < remainder; i++) {
+    if (i < 4) {
+      rowSeeds[i] += 1;
+    } else {
+      colSeeds[i - 4] += 1;
+    }
+  }
+  
+  // Rebuild matrix
+  const newMatrix: Matrix = [];
+  for (let row = 0; row < 4; row++) {
+    newMatrix[row] = [];
+    for (let col = 0; col < 4; col++) {
+      const value = rowSeeds[row] + colSeeds[col];
+      newMatrix[row][col] = {
+        value,
+        isUserEdited: false,
+        isCalculated: true
+      };
+    }
+  }
+  
+  return newMatrix;
 } 
