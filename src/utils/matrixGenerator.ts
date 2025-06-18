@@ -382,54 +382,49 @@ export function matchMatrixLength(matrix: Matrix, target: number): Matrix {
     console.warn(`Target ${target} is too small for ${targetDigits} digits. Minimum required: ${minTargetForDigits}`);
     return matrix;
   }
-  
-  // First, adjust individual values to match digit length
-  const adjustedMatrix: Matrix = matrix.map(row =>
-    row.map(cell => {
-      const currentValue = cell.value;
-      const currentDigits = currentValue.toString().length;
-      
-      if (currentDigits === targetDigits) {
-        // Already correct length, keep as is
-        return cell;
-      } else if (currentDigits < targetDigits) {
-        // Need to add digits - create natural-looking numbers
-        const diff = targetDigits - currentDigits;
-        let newValue = currentValue;
-        
-        // Use a more sophisticated approach to create natural-looking numbers
-        for (let i = 0; i < diff; i++) {
-          // Use the last digit or a related digit to make it look natural
-          const lastDigit = newValue % 10;
-          const secondLastDigit = Math.floor(newValue / 10) % 10;
-          
-          // Create a natural progression
-          let nextDigit = (lastDigit + 1) % 10;
-          if (nextDigit === 0) nextDigit = 1; // Avoid leading zeros
-          
-          newValue = newValue * 10 + nextDigit;
-        }
-        
-        return {
-          ...cell,
-          value: newValue,
-          isCalculated: true
-        };
-      } else {
-        // Need to reduce digits - take first N digits
-        const newValue = parseInt(currentValue.toString().substring(0, targetDigits));
-        
-        return {
-          ...cell,
-          value: newValue,
+
+  // Try up to 20 times to find a valid matrix with all values matching the digit length
+  for (let attempt = 0; attempt < 20; attempt++) {
+    // Generate seeds that will sum to the target
+    const baseValue = Math.floor(target / 8);
+    const remainder = target - baseValue * 8;
+    let seeds = Array(8).fill(baseValue);
+    for (let i = 0; i < remainder; i++) seeds[i]++;
+
+    // Add some jitter to seeds to make numbers more organic
+    for (let i = 0; i < 8; i++) {
+      seeds[i] += Math.floor(Math.random() * Math.pow(10, targetDigits - 2));
+    }
+    // Adjust to sum to target
+    let sum = seeds.reduce((a, b) => a + b, 0);
+    seeds[7] += (target - sum);
+
+    const rowSeeds = seeds.slice(0, 4);
+    const colSeeds = seeds.slice(4, 8);
+
+    // Build matrix
+    const newMatrix: Matrix = [];
+    let allMatch = true;
+    for (let row = 0; row < 4; row++) {
+      newMatrix[row] = [];
+      for (let col = 0; col < 4; col++) {
+        const value = rowSeeds[row] + colSeeds[col];
+        const valueDigits = Math.abs(value).toString().length;
+        if (valueDigits !== targetDigits) allMatch = false;
+        newMatrix[row][col] = {
+          value,
+          isUserEdited: false,
           isCalculated: true
         };
       }
-    })
-  );
-  
-  // Now recalculate to maintain the forcing property
-  return recalculateForcingProperty(adjustedMatrix, target);
+    }
+    if (allMatch) {
+      return newMatrix;
+    }
+  }
+  // If unable to find a valid matrix, show warning and return original
+  console.warn('Unable to generate a matrix where all values match the target digit length.');
+  return matrix;
 }
 
 // Helper function to recalculate matrix to maintain forcing property
