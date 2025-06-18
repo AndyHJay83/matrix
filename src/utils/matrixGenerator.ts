@@ -49,33 +49,33 @@ function checkLatinSquareProperty(matrix: Matrix, target: number): boolean {
 
 // Generate forcing matrix using classic Latin square construction
 export function generateForcingMatrix(target: number): Matrix {
-  // Correct forcing matrix algorithm with variance
+  // Correct forcing matrix algorithm with dramatic variance
   // Choose 8 seed numbers (4 for rows, 4 for columns) that sum to target
   
-  // Step 1: Generate 8 diverse seed numbers that sum to target
+  // Step 1: Generate 8 highly diverse seed numbers that sum to target
   const baseValue = Math.floor(target / 8);
   const remainder = target % 8;
   
-  // Create more diverse seed values
+  // Create much more diverse seed values with wider range
   const seeds: number[] = [];
   
-  // Start with base values but add variance
-  seeds[0] = baseValue - 2;  // Lower value
-  seeds[1] = baseValue - 1;  // Slightly lower
-  seeds[2] = baseValue;      // Base value
+  // Use a much wider range for dramatic variance
+  seeds[0] = baseValue - 4;  // Much lower
+  seeds[1] = baseValue - 2;  // Lower
+  seeds[2] = baseValue + 3;  // Higher
   seeds[3] = baseValue + 1;  // Slightly higher
-  seeds[4] = baseValue + 2;  // Higher value
-  seeds[5] = baseValue + 1;  // Slightly higher
-  seeds[6] = baseValue;      // Base value
-  seeds[7] = baseValue - 1;  // Slightly lower
+  seeds[4] = baseValue + 5;  // Much higher
+  seeds[5] = baseValue - 1;  // Slightly lower
+  seeds[6] = baseValue + 2;  // Higher
+  seeds[7] = baseValue - 4;  // Much lower
   
   // Distribute remainder to make sum exactly target
-  // Add remainder to the middle seeds to maintain balance
+  // Add remainder to middle seeds to maintain balance
   for (let i = 0; i < remainder; i++) {
     seeds[2 + i] += 1; // Add to middle seeds
   }
   
-  // Ensure all seeds are positive
+  // Ensure all seeds are positive and adjust if needed
   const minSeed = Math.min(...seeds);
   if (minSeed < 1) {
     const adjustment = 1 - minSeed;
