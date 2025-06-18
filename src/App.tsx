@@ -12,6 +12,9 @@ import MatrixGrid from './components/MatrixGrid';
 import Controls from './components/Controls';
 import './styles/main.css';
 
+// Track user edits: { [col]: { row, value } }
+type UserEdits = { [col: number]: { row: number, value: number } };
+
 function App() {
   const [target, setTarget] = useState(100);
   const [variance, setVariance] = useState(0.5); // 0 = minimal variance, 1 = maximum variance
@@ -20,6 +23,7 @@ function App() {
   const [validationMessage, setValidationMessage] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [userEdits, setUserEdits] = useState<UserEdits>({});
 
   // Check if app is installed as PWA
   useEffect(() => {
@@ -78,11 +82,16 @@ function App() {
   };
 
   const handleCellChange = useCallback((row: number, col: number, value: number) => {
+    setUserEdits(prev => {
+      // Only allow one edit per column
+      if (prev[col] && prev[col].row !== row) return prev;
+      return { ...prev, [col]: { row, value } };
+    });
     setMatrix(prevMatrix => {
-      const newMatrix = recalculateMatrix(prevMatrix, target, row, col, value);
+      const newMatrix = recalculateMatrix(prevMatrix, target, row, col, value, userEdits);
       return newMatrix;
     });
-  }, [target]);
+  }, [target, userEdits]);
 
   const handleReset = () => {
     if (target >= 1 && target <= 9999999) {
@@ -157,7 +166,7 @@ function App() {
         <>
           <div className="matrix-instructions">
             <p className="subtitle">
-              💡 <strong>Tip:</strong> Click any cell to edit it! The other cells will automatically adjust to maintain the forcing property.
+              💡 <strong>Tip:</strong> Edit one cell per column. The rest will update to maintain the forcing property.
             </p>
           </div>
           
@@ -165,6 +174,7 @@ function App() {
             matrix={matrix}
             onCellChange={handleCellChange}
             disabled={isGenerating}
+            userEdits={userEdits}
           />
 
           <div className={`validation ${isValid ? 'valid' : 'invalid'}`}>

@@ -224,112 +224,99 @@ export function recalculateMatrix(
   target: number, 
   editedRow: number, 
   editedCol: number,
-  newValue: number
+  newValue: number,
+  userEdits: { [col: number]: { row: number, value: number } }
 ): Matrix {
-  // Create a new matrix with the edited value
-  const newMatrix: Matrix = matrix.map(row => 
-    row.map(cell => ({ ...cell }))
-  );
-  
-  // Set the edited cell
-  newMatrix[editedRow][editedCol] = {
-    value: newValue,
-    isUserEdited: true,
-    isCalculated: false
-  };
-  
-  // For user edits, we need to recalculate the other cells to maintain the forcing property
-  // This requires solving the system: sum of all seeds = target, and edited cell = newValue
-  
-  // Approach: Use the edited cell constraint to solve for the remaining seeds
-  // Since matrix[i][j] = rowSeed[i] + colSeed[j], we have:
-  // rowSeed[editedRow] + colSeed[editedCol] = newValue
-  
-  // We also know: sum of all 8 seeds = target
-  // So: sum of other 7 seeds = target - newValue
-  
-  // Let's use a minimal variance approach for the remaining seeds
-  const remainingSum = target - newValue;
-  const remainingSeeds = 7; // 8 total - 1 edited
-  
-  const baseValue = Math.floor(remainingSum / remainingSeeds);
-  const remainder = remainingSum % remainingSeeds;
-  
-  // Create seeds for the remaining positions
-  const seeds: number[] = [];
-  
-  // Fill all 8 positions with base values first
-  for (let i = 0; i < 8; i++) {
-    seeds[i] = baseValue;
+  // If fewer than 4 columns are edited, just update the cell and return
+  if (Object.keys(userEdits).length < 4) {
+    const newMatrix: Matrix = matrix.map((row, r) =>
+      row.map((cell, c) =>
+        r === editedRow && c === editedCol
+          ? { ...cell, value: newValue, isUserEdited: true }
+          : cell
+      )
+    );
+    return newMatrix;
   }
-  
-  // Distribute remainder
-  for (let i = 0; i < remainder; i++) {
-    seeds[i] += 1;
+
+  // Otherwise, use the 4 user-edited cells (one per column) as constraints
+  // Let userEdits[col] = { row, value }
+  // We want: rowSeed[row] + colSeed[col] = value (for each col)
+  // And sum(rowSeeds) + sum(colSeeds) = target
+
+  // Set up the system
+  // Let x0,x1,x2,x3 = rowSeeds, y0,y1,y2,y3 = colSeeds
+  // For each col: x[row] + y[col] = value
+  // 8 unknowns, 5 equations (4 constraints + sum)
+
+  // We'll solve by:
+  // 1. Set y0 = 0 (arbitrary, as only differences matter)
+  // 2. Solve for x[row] and y[col] using the constraints
+  // 3. Adjust all seeds so that sum = target
+
+  const rowSeeds = [0, 0, 0, 0];
+  const colSeeds = [0, 0, 0, 0];
+  const usedRows = [false, false, false, false];
+
+  // Step 1: Set y0 = 0
+  colSeeds[0] = 0;
+  // Find which row is edited in col 0
+  const edit0 = userEdits[0];
+  rowSeeds[edit0.row] = edit0.value;
+  usedRows[edit0.row] = true;
+
+  // Step 2: For other columns, solve for y[col] and x[row]
+  for (let col = 1; col < 4; col++) {
+    const { row, value } = userEdits[col];
+    colSeeds[col] = value - rowSeeds[row];
+    usedRows[row] = true;
   }
-  
-  // Now we need to ensure the edited cell constraint is satisfied
-  // rowSeed[editedRow] + colSeed[editedCol] = newValue
-  const currentSum = seeds[editedRow] + seeds[editedCol + 4];
-  const difference = newValue - currentSum;
-  
-  if (difference !== 0) {
-    // Adjust the seeds to satisfy the constraint
-    // We'll distribute the difference across the non-edited seeds
-    
-    // Calculate how much to adjust each seed
-    const adjustmentPerSeed = Math.floor(difference / (remainingSeeds - 1));
-    const extraAdjustment = difference % (remainingSeeds - 1);
-    
-    let adjustmentCount = 0;
-    for (let i = 0; i < 8; i++) {
-      if (i !== editedRow && i !== editedCol + 4) {
-        seeds[i] += adjustmentPerSeed;
-        if (adjustmentCount < extraAdjustment) {
-          seeds[i] += 1;
-        }
-        adjustmentCount++;
-      }
-    }
-    
-    // Ensure all seeds are positive
-    const minSeed = Math.min(...seeds);
-    if (minSeed < 1) {
-      const adjustment = 1 - minSeed;
-      for (let i = 0; i < 8; i++) {
-        seeds[i] += adjustment;
-      }
-      // Adjust the last seed to maintain target sum
-      seeds[7] -= adjustment * 8;
-    }
-  }
-  
-  // Split into row and column seeds
-  const rowSeeds = seeds.slice(0, 4);
-  const colSeeds = seeds.slice(4, 8);
-  
-  // Rebuild the matrix with new seeds
+
+  // Step 3: For any row not edited, solve for x[row] using y0 = 0
   for (let row = 0; row < 4; row++) {
-    for (let col = 0; col < 4; col++) {
-      if (row === editedRow && col === editedCol) {
-        // Keep the user-edited value
-        newMatrix[row][col] = {
-          value: newValue,
-          isUserEdited: true,
-          isCalculated: false
-        };
-      } else {
-        // Calculate new value based on seeds
-        const value = rowSeeds[row] + colSeeds[col];
-        newMatrix[row][col] = {
-          value,
-          isUserEdited: false,
-          isCalculated: true
-        };
+    if (!usedRows[row]) {
+      // Find which col this row is edited in
+      let found = false;
+      for (let col = 0; col < 4; col++) {
+        if (userEdits[col] && userEdits[col].row === row) {
+          rowSeeds[row] = userEdits[col].value - colSeeds[col];
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        // Not edited, leave as 0 for now
       }
     }
   }
-  
+
+  // Step 4: Adjust all seeds so that sum(rowSeeds) + sum(colSeeds) = target
+  const totalSeeds = rowSeeds.reduce((a, b) => a + b, 0) + colSeeds.reduce((a, b) => a + b, 0);
+  const diff = target - totalSeeds;
+  // Distribute diff evenly
+  for (let i = 0; i < 4; i++) {
+    rowSeeds[i] += Math.floor(diff / 8);
+    colSeeds[i] += Math.floor(diff / 8);
+  }
+  for (let i = 0; i < diff % 8; i++) {
+    if (i < 4) rowSeeds[i] += 1;
+    else colSeeds[i - 4] += 1;
+  }
+
+  // Step 5: Build the new matrix
+  const newMatrix: Matrix = [];
+  for (let row = 0; row < 4; row++) {
+    newMatrix[row] = [];
+    for (let col = 0; col < 4; col++) {
+      const isUserEdited = userEdits[col] && userEdits[col].row === row;
+      const value = rowSeeds[row] + colSeeds[col];
+      newMatrix[row][col] = {
+        value,
+        isUserEdited,
+        isCalculated: !isUserEdited
+      };
+    }
+  }
   return newMatrix;
 }
 
