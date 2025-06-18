@@ -206,7 +206,7 @@ function App() {
             <>
               <div className="matrix-instructions">
                 <p className="subtitle">
-                  💡 <strong>Tip:</strong> Edit one cell per column. The rest will update to maintain the forcing property.
+                  💡 <strong>Tip:</strong> You can edit one cell per column. The rest will update to maintain the forcing property. You may have to reduce the variance slider before the matrix works.
                 </p>
               </div>
               
