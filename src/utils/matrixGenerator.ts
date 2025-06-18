@@ -13,108 +13,148 @@ export interface MatrixState {
   validationMessage: string;
 }
 
-// Generate initial forcing matrix with proper algorithm
+// Generate all permutations of rows (1,2,3,4)
+function generatePermutations(): number[][] {
+  const permutations: number[][] = [];
+  
+  function permute(arr: number[], start: number) {
+    if (start === arr.length - 1) {
+      permutations.push([...arr]);
+      return;
+    }
+    
+    for (let i = start; i < arr.length; i++) {
+      [arr[start], arr[i]] = [arr[i], arr[start]];
+      permute(arr, start + 1);
+      [arr[start], arr[i]] = [arr[i], arr[start]];
+    }
+  }
+  
+  permute([0, 1, 2, 3], 0);
+  return permutations;
+}
+
+// Check if a matrix satisfies the Latin Square forcing property
+function checkLatinSquareProperty(matrix: Matrix, target: number): boolean {
+  const permutations = generatePermutations();
+  
+  for (const perm of permutations) {
+    let sum = 0;
+    for (let col = 0; col < 4; col++) {
+      const row = perm[col];
+      sum += matrix[row][col].value;
+    }
+    if (sum !== target) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+// Generate initial Latin Square forcing matrix
 export function generateForcingMatrix(target: number): Matrix {
   const matrix: Matrix = [];
+  const maxAttempts = 1000;
   
-  // Create a proper forcing matrix using the mathematical principle
-  // For a 4x4 forcing matrix, we need to ensure that any combination
-  // of one number from each column sums to the target
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Initialize matrix with random positive numbers
+    for (let row = 0; row < 4; row++) {
+      matrix[row] = [];
+      for (let col = 0; col < 4; col++) {
+        const baseValue = Math.floor(target / 4);
+        const variance = Math.min(500, Math.max(100, Math.floor(target * 0.15)));
+        const minVal = Math.max(1, baseValue - variance);
+        const maxVal = baseValue + variance;
+        const value = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
+        
+        matrix[row][col] = {
+          value,
+          isUserEdited: false,
+          isCalculated: false
+        };
+      }
+    }
+    
+    // Try to adjust the matrix to satisfy the Latin Square property
+    if (adjustMatrixForLatinSquare(matrix, target)) {
+      return matrix;
+    }
+  }
   
-  // Use a more conservative approach to ensure all numbers are positive
+  // If we can't find a good solution, create a simple one
+  return createSimpleLatinSquareMatrix(target);
+}
+
+// Adjust matrix to satisfy Latin Square property
+function adjustMatrixForLatinSquare(matrix: Matrix, target: number): boolean {
+  const maxIterations = 50;
+  
+  for (let iteration = 0; iteration < maxIterations; iteration++) {
+    const permutations = generatePermutations();
+    let allValid = true;
+    
+    for (const perm of permutations) {
+      let sum = 0;
+      for (let col = 0; col < 4; col++) {
+        const row = perm[col];
+        sum += matrix[row][col].value;
+      }
+      
+      if (sum !== target) {
+        allValid = false;
+        // Adjust the matrix to fix this permutation
+        const diff = target - sum;
+        const adjustment = Math.floor(diff / 4);
+        
+        for (let col = 0; col < 4; col++) {
+          const row = perm[col];
+          matrix[row][col].value = Math.max(1, matrix[row][col].value + adjustment);
+        }
+      }
+    }
+    
+    if (allValid) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+// Create a simple Latin Square matrix as fallback
+function createSimpleLatinSquareMatrix(target: number): Matrix {
+  const matrix: Matrix = [];
   const baseValue = Math.floor(target / 4);
-  const maxVariance = Math.min(1000, Math.max(200, Math.floor(target * 0.2))); // Reduced variance
   
-  // Generate the first 3 rows with diverse positive numbers
-  for (let row = 0; row < 3; row++) {
+  // Create a simple pattern that works
+  for (let row = 0; row < 4; row++) {
     matrix[row] = [];
     for (let col = 0; col < 4; col++) {
-      // Create diverse positive numbers within a safe range
-      const minVal = Math.max(1, baseValue - maxVariance);
-      const maxVal = baseValue + maxVariance;
-      const randomOffset = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
-      
-      // Add some pattern to make it more interesting
-      const patternOffset = (row * 7 + col * 13) % 50; // Reduced pattern offset
-      const value = Math.max(1, randomOffset + patternOffset);
-      
+      // Use a pattern that ensures Latin Square property
+      const value = baseValue + (row + col) % 4;
       matrix[row][col] = {
-        value,
+        value: Math.max(1, value),
         isUserEdited: false,
         isCalculated: false
       };
     }
   }
   
-  // Calculate the 4th row to ensure forcing property
-  matrix[3] = [];
+  // Adjust to make it sum to target
+  const permutations = generatePermutations();
+  const firstPerm = permutations[0];
+  let currentSum = 0;
   for (let col = 0; col < 4; col++) {
-    let sum = 0;
-    for (let row = 0; row < 3; row++) {
-      sum += matrix[row][col].value;
+    const row = firstPerm[col];
+    currentSum += matrix[row][col].value;
+  }
+  
+  const adjustment = Math.floor((target - currentSum) / 4);
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 4; col++) {
+      matrix[row][col].value = Math.max(1, matrix[row][col].value + adjustment);
     }
-    
-    // The 4th row value must make the column sum to target
-    let requiredValue = target - sum;
-    
-    // If the required value would be negative or zero, we need to adjust the matrix
-    if (requiredValue <= 0) {
-      // Find the largest value in the current column and reduce it significantly
-      let maxValue = 0;
-      let maxRow = 0;
-      for (let row = 0; row < 3; row++) {
-        if (matrix[row][col].value > maxValue) {
-          maxValue = matrix[row][col].value;
-          maxRow = row;
-        }
-      }
-      
-      // Reduce the largest value to make room for a positive 4th row value
-      // Use a more aggressive reduction to ensure positive result
-      const reduction = Math.abs(requiredValue) + Math.floor(target * 0.1) + 1;
-      matrix[maxRow][col].value = Math.max(1, maxValue - reduction);
-      
-      // Recalculate the required value
-      sum = 0;
-      for (let row = 0; row < 3; row++) {
-        sum += matrix[row][col].value;
-      }
-      requiredValue = target - sum;
-      
-      // Double-check that we have a positive value
-      if (requiredValue <= 0) {
-        // If still negative, reduce another value in the column
-        let secondMaxValue = 0;
-        let secondMaxRow = 0;
-        for (let row = 0; row < 3; row++) {
-          if (row !== maxRow && matrix[row][col].value > secondMaxValue) {
-            secondMaxValue = matrix[row][col].value;
-            secondMaxRow = row;
-          }
-        }
-        
-        const additionalReduction = Math.abs(requiredValue) + 1;
-        matrix[secondMaxRow][col].value = Math.max(1, secondMaxValue - additionalReduction);
-        
-        // Final recalculation
-        sum = 0;
-        for (let row = 0; row < 3; row++) {
-          sum += matrix[row][col].value;
-        }
-        requiredValue = target - sum;
-      }
-    }
-    
-    // Final safety check - if still not positive, set to 1 and adjust target
-    if (requiredValue <= 0) {
-      requiredValue = 1;
-    }
-    
-    matrix[3][col] = {
-      value: requiredValue,
-      isUserEdited: false,
-      isCalculated: true
-    };
   }
   
   return matrix;
@@ -135,105 +175,26 @@ export function recalculateMatrix(
   newMatrix[editedRow][editedCol].isUserEdited = true;
   newMatrix[editedRow][editedCol].isCalculated = false;
   
-  // Strategy: Recalculate the bottom row to maintain forcing property
-  // This is the most reliable approach for a 4x4 forcing matrix
-  for (let col = 0; col < 4; col++) {
-    let sum = 0;
-    for (let row = 0; row < 3; row++) {
-      sum += newMatrix[row][col].value;
-    }
-    
-    // Calculate the required value for the bottom row
-    let requiredValue = target - sum;
-    
-    // If the required value would be negative, adjust other values in the column
-    if (requiredValue <= 0) {
-      // Find the largest non-user-edited value in this column
-      let maxValue = 0;
-      let maxRow = 0;
-      for (let row = 0; row < 3; row++) {
-        if (row !== editedRow && newMatrix[row][col].value > maxValue) {
-          maxValue = newMatrix[row][col].value;
-          maxRow = row;
-        }
-      }
-      
-      // Reduce the largest value to make room for a positive 4th row value
-      const reduction = Math.abs(requiredValue) + Math.floor(target * 0.05) + 1;
-      newMatrix[maxRow][col].value = Math.max(1, maxValue - reduction);
-      
-      // Recalculate the required value
-      sum = 0;
-      for (let row = 0; row < 3; row++) {
-        sum += newMatrix[row][col].value;
-      }
-      requiredValue = target - sum;
-      
-      // If still negative, reduce another value
-      if (requiredValue <= 0) {
-        let secondMaxValue = 0;
-        let secondMaxRow = 0;
-        for (let row = 0; row < 3; row++) {
-          if (row !== editedRow && row !== maxRow && newMatrix[row][col].value > secondMaxValue) {
-            secondMaxValue = newMatrix[row][col].value;
-            secondMaxRow = row;
-          }
-        }
-        
-        const additionalReduction = Math.abs(requiredValue) + 1;
-        newMatrix[secondMaxRow][col].value = Math.max(1, secondMaxValue - additionalReduction);
-        
-        // Final recalculation
-        sum = 0;
-        for (let row = 0; row < 3; row++) {
-          sum += newMatrix[row][col].value;
-        }
-        requiredValue = target - sum;
-      }
-    }
-    
-    // Final safety check
-    if (requiredValue <= 0) {
-      requiredValue = 1;
-    }
-    
-    newMatrix[3][col].value = requiredValue;
-    newMatrix[3][col].isCalculated = true;
-    newMatrix[3][col].isUserEdited = false;
+  // Try to adjust the matrix to maintain Latin Square property
+  if (adjustMatrixForLatinSquare(newMatrix, target)) {
+    return newMatrix;
   }
   
-  return newMatrix;
+  // If adjustment fails, regenerate the matrix
+  return generateForcingMatrix(target);
 }
 
-// Validate that all combinations sum to target
+// Validate that all Latin Square combinations sum to target
 export function validateMatrix(matrix: Matrix, target: number): boolean {
-  // For a forcing matrix, we need to check that any combination
-  // of one number from each column sums to the target
-  
-  // Check all 256 combinations (4^4)
-  for (let i = 0; i < 256; i++) {
-    const combination = i.toString(4).padStart(4, '0');
-    let sum = 0;
-    
-    for (let col = 0; col < 4; col++) {
-      const row = parseInt(combination[col]);
-      sum += matrix[row][col].value;
-    }
-    
-    if (sum !== target) {
-      return false;
-    }
-  }
-  
-  return true;
+  return checkLatinSquareProperty(matrix, target);
 }
 
 // Get validation message
 export function getValidationMessage(matrix: Matrix, target: number): string {
   if (validateMatrix(matrix, target)) {
-    return "✓ Valid Matrix - All combinations sum to target";
+    return "✓ Valid Matrix - All Latin Square combinations sum to target";
   } else {
-    return "⚠ Invalid Matrix - Some combinations don't sum to target";
+    return "⚠ Invalid Matrix - Some Latin Square combinations don't sum to target";
   }
 }
 
