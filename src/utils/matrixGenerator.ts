@@ -67,15 +67,15 @@ export function generateForcingMatrix(target: number, variance: number = 0.5): M
   const maxVariance = Math.max(1, Math.floor(target / 20)); // Scale with target
   const varianceRange = Math.floor(maxVariance * varianceMultiplier);
   
-  // Use adjustable variance range
-  seeds[0] = baseValue - varianceRange * 2;  // Much lower
-  seeds[1] = baseValue - varianceRange;      // Lower
-  seeds[2] = baseValue + varianceRange * 1.5; // Higher
-  seeds[3] = baseValue + varianceRange * 0.5; // Slightly higher
-  seeds[4] = baseValue + varianceRange * 2.5; // Much higher
-  seeds[5] = baseValue - varianceRange * 0.5; // Slightly lower
-  seeds[6] = baseValue + varianceRange;      // Higher
-  seeds[7] = baseValue - varianceRange * 2;  // Much lower
+  // Use adjustable variance range with integer calculations
+  seeds[0] = Math.floor(baseValue - varianceRange * 2);  // Much lower
+  seeds[1] = Math.floor(baseValue - varianceRange);      // Lower
+  seeds[2] = Math.floor(baseValue + varianceRange * 1.5); // Higher
+  seeds[3] = Math.floor(baseValue + varianceRange * 0.5); // Slightly higher
+  seeds[4] = Math.floor(baseValue + varianceRange * 2.5); // Much higher
+  seeds[5] = Math.floor(baseValue - varianceRange * 0.5); // Slightly lower
+  seeds[6] = Math.floor(baseValue + varianceRange);      // Higher
+  seeds[7] = Math.floor(baseValue - varianceRange * 2);  // Much lower
   
   // Distribute remainder to make sum exactly target
   for (let i = 0; i < remainder; i++) {
@@ -102,7 +102,7 @@ export function generateForcingMatrix(target: number, variance: number = 0.5): M
   for (let row = 0; row < 4; row++) {
     matrix[row] = [];
     for (let col = 0; col < 4; col++) {
-      const value = rowSeeds[row] + colSeeds[col];
+      const value = Math.floor(rowSeeds[row] + colSeeds[col]);
       matrix[row][col] = {
         value,
         isUserEdited: false,
