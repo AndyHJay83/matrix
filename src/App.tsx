@@ -22,7 +22,7 @@ type ViewMode = 'matrix' | 'objects' | 'flashcards';
 
 function App() {
   const [target, setTarget] = useState(100);
-  const [variance, setVariance] = useState(0.5); // 0 = minimal variance, 1 = maximum variance
+  const [variance, setVariance] = useState(1.0); // 0 = minimal variance, 1 = maximum variance
   const [matrix, setMatrix] = useState<Matrix>([]);
   const [isValid, setIsValid] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
