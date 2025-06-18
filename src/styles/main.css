@@ -593,6 +593,22 @@ body {
   text-align: center;
 }
 
+.auto-fill-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.auto-fill-buttons .btn {
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .object-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

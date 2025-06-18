@@ -9,6 +9,21 @@ const ObjectInput: React.FC<ObjectInputProps> = ({ onObjectsSubmit, disabled = f
   const [objects, setObjects] = useState<string[]>(Array(16).fill(''));
   const [showGrid, setShowGrid] = useState(false);
 
+  const cities = [
+    'Tokyo', 'New York', 'London', 'Paris', 'Sydney', 'Mumbai', 'Cairo', 'Rio de Janeiro',
+    'Moscow', 'Toronto', 'Singapore', 'Berlin', 'Madrid', 'Rome', 'Amsterdam', 'Vienna'
+  ];
+
+  const householdObjects = [
+    'Spoon', 'Book', 'Chair', 'Lamp', 'Phone', 'Keys', 'Watch', 'Glasses',
+    'Wallet', 'Pen', 'Cup', 'Hat', 'Shoes', 'Bag', 'Mirror', 'Clock'
+  ];
+
+  const transport = [
+    'Car', 'Boat', 'Train', 'Plane', 'Bicycle', 'Bus', 'Motorcycle', 'Helicopter',
+    'Subway', 'Tram', 'Truck', 'Van', 'Ship', 'Jet', 'Rocket', 'Skateboard'
+  ];
+
   const handleObjectChange = (index: number, value: string) => {
     const newObjects = [...objects];
     newObjects[index] = value;
@@ -27,11 +42,41 @@ const ObjectInput: React.FC<ObjectInputProps> = ({ onObjectsSubmit, disabled = f
     setShowGrid(false);
   };
 
+  const handleAutoFill = (items: string[]) => {
+    // Shuffle the array to get random items
+    const shuffled = [...items].sort(() => Math.random() - 0.5);
+    setObjects(shuffled.slice(0, 16));
+  };
+
   const isComplete = objects.every(obj => obj.trim() !== '');
 
   return (
     <div className="object-input">
       <h3>Enter Your 16 Objects</h3>
+      
+      <div className="auto-fill-buttons">
+        <button
+          className="btn btn-secondary"
+          onClick={() => handleAutoFill(cities)}
+          disabled={disabled}
+        >
+          CITIES
+        </button>
+        <button
+          className="btn btn-secondary"
+          onClick={() => handleAutoFill(householdObjects)}
+          disabled={disabled}
+        >
+          OBJECTS
+        </button>
+        <button
+          className="btn btn-secondary"
+          onClick={() => handleAutoFill(transport)}
+          disabled={disabled}
+        >
+          TRANSPORT
+        </button>
+      </div>
       
       <div className="object-grid">
         {objects.map((object, index) => (
@@ -58,7 +103,7 @@ const ObjectInput: React.FC<ObjectInputProps> = ({ onObjectsSubmit, disabled = f
           onClick={handleSubmit}
           disabled={disabled || !isComplete}
         >
-          Assign Objects to Matrix
+          Assign Objects
         </button>
         
         {showGrid && (

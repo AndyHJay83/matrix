@@ -242,7 +242,7 @@ function App() {
                   onClick={() => setViewMode('objects')}
                   disabled={isGenerating}
                 >
-                  Assign Objects to Matrix
+                  Assign Objects
                 </button>
               </div>
             </>
@@ -256,7 +256,7 @@ function App() {
             <button className="btn btn-secondary" onClick={handleBackToMatrix}>
               ← Back to Matrix
             </button>
-            <h2>Assign Objects to Matrix</h2>
+            <h2>Assign Objects</h2>
           </div>
 
           <ObjectInput
