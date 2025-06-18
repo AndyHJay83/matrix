@@ -31,7 +31,7 @@ const TargetInput: React.FC<TargetInputProps> = ({
     <div className="target-section">
       <div className="target-input-group">
         <label htmlFor="target-input" className="target-label">
-          Enter Target Number (1-9,999,999)
+          Target Number
         </label>
         <input
           id="target-input"
@@ -40,29 +40,19 @@ const TargetInput: React.FC<TargetInputProps> = ({
           value={target}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
+          disabled={disabled}
           min="1"
           max="9999999"
           inputMode="numeric"
           pattern="[0-9]*"
-          disabled={disabled}
-          aria-describedby="target-description"
+          aria-label="Enter target number"
         />
-        <p id="target-description" className="subtitle">
-          This number will be the sum of any combination of one number from each column
-        </p>
         <button
           className="btn btn-primary"
           onClick={onGenerate}
-          disabled={disabled || !isValidTarget}
+          disabled={disabled || target < 1 || target > 9999999}
         >
-          {disabled ? (
-            <>
-              <span className="spinner"></span>
-              Generating...
-            </>
-          ) : (
-            'Generate Matrix'
-          )}
+          Generate Matrix
         </button>
       </div>
     </div>

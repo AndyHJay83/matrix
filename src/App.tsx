@@ -170,9 +170,6 @@ function App() {
     <div className="app">
       <header className="header">
         <h1 className="title">Forcing Matrix Generator</h1>
-        <p className="subtitle">
-          Enter a target number to generate a 4x4 matrix where any path (one number from each column) equals your target
-        </p>
         {isInstalled && (
           <p style={{ fontSize: '0.9rem', color: 'var(--accent-color)', marginTop: '0.5rem' }}>
             ✓ Running as installed app
