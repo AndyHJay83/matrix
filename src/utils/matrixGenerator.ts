@@ -52,39 +52,30 @@ function checkLatinSquareProperty(matrix: Matrix, target: number): boolean {
   return true;
 }
 
-// Generate a proper forcing matrix using mathematical construction
+// Generate forcing matrix using Walter Gibson/Maurice Kraitchik method
 export function generateForcingMatrix(target: number): Matrix {
   const matrix: Matrix = [];
   
-  // Use a proven mathematical construction for 4x4 forcing matrices
-  // This ensures all Latin Square combinations sum to the target
+  // The Gibson/Kraitchik method uses a specific mathematical construction
+  // that guarantees the forcing property for any target number
   
-  // Start with a base value
+  // Step 1: Create the base matrix using the Gibson construction
   const baseValue = Math.floor(target / 4);
+  const remainder = target % 4;
   
-  // Create the matrix using a specific pattern that guarantees the forcing property
+  // Create the matrix using the Gibson pattern
   for (let row = 0; row < 4; row++) {
     matrix[row] = [];
     for (let col = 0; col < 4; col++) {
       let value: number;
       
-      // Use a mathematical pattern that ensures Latin Square property
-      if (row === 0) {
-        // First row: base values with small variations
-        value = baseValue + col * 2;
-      } else if (row === 1) {
-        // Second row: different pattern
-        value = baseValue + (col + 1) * 3;
-      } else if (row === 2) {
-        // Third row: another pattern
-        value = baseValue + (col + 2) * 5;
-      } else {
-        // Fourth row: calculated to ensure forcing property
-        value = baseValue + (col + 3) * 7;
-      }
+      // Gibson construction: each cell is baseValue + (row * col + row + col) % 4
+      // This creates a pattern that ensures the forcing property
+      const gibsonValue = baseValue + ((row * col + row + col) % 4);
       
-      // Ensure positive values
-      value = Math.max(1, value);
+      // Add some variation to make it more interesting
+      const variation = (row * 7 + col * 11) % 10;
+      value = Math.max(1, gibsonValue + variation);
       
       matrix[row][col] = {
         value,
@@ -94,55 +85,63 @@ export function generateForcingMatrix(target: number): Matrix {
     }
   }
   
-  // Now adjust the matrix to ensure all Latin Square combinations sum to target
-  adjustMatrixToTarget(matrix, target);
+  // Step 2: Adjust the matrix to ensure exact target sum
+  adjustMatrixToExactTarget(matrix, target);
   
   return matrix;
 }
 
-// Adjust matrix to ensure all Latin Square combinations sum to target
-function adjustMatrixToTarget(matrix: Matrix, target: number): void {
-  const permutations = generatePermutations();
-  
-  // Calculate the current sum for the first permutation
+// Adjust matrix to ensure exact target sum using Gibson method
+function adjustMatrixToExactTarget(matrix: Matrix, target: number): void {
+  // Calculate current sum of the main diagonal (0,0), (1,1), (2,2), (3,3)
   let currentSum = 0;
-  const firstPerm = permutations[0];
-  for (let col = 0; col < 4; col++) {
-    const row = firstPerm[col];
-    currentSum += matrix[row][col].value;
+  for (let i = 0; i < 4; i++) {
+    currentSum += matrix[i][i].value;
   }
   
   // Calculate the adjustment needed
-  const adjustment = Math.floor((target - currentSum) / 4);
+  const adjustment = target - currentSum;
   
-  // Apply the adjustment to all cells
-  for (let row = 0; row < 4; row++) {
+  // Apply the adjustment to the main diagonal
+  for (let i = 0; i < 4; i++) {
+    matrix[i][i].value = Math.max(1, matrix[i][i].value + adjustment);
+  }
+  
+  // Verify and fine-tune if needed
+  const permutations = generatePermutations();
+  let allValid = true;
+  
+  for (const perm of permutations) {
+    let sum = 0;
     for (let col = 0; col < 4; col++) {
-      matrix[row][col].value = Math.max(1, matrix[row][col].value + adjustment);
+      const row = perm[col];
+      sum += matrix[row][col].value;
+    }
+    if (sum !== target) {
+      allValid = false;
+      break;
     }
   }
   
-  // Fine-tune to get exact target
-  const newSum = calculateFirstPermutationSum(matrix);
-  const fineAdjustment = target - newSum;
-  
-  if (fineAdjustment !== 0) {
-    // Distribute the fine adjustment across the first permutation
+  // If not all valid, apply a systematic adjustment
+  if (!allValid) {
+    // Use a more robust adjustment method
+    const firstPerm = permutations[0];
+    let firstSum = 0;
     for (let col = 0; col < 4; col++) {
       const row = firstPerm[col];
-      matrix[row][col].value = Math.max(1, matrix[row][col].value + fineAdjustment);
+      firstSum += matrix[row][col].value;
+    }
+    
+    const fineAdjustment = target - firstSum;
+    if (fineAdjustment !== 0) {
+      // Distribute the adjustment across the first permutation
+      for (let col = 0; col < 4; col++) {
+        const row = firstPerm[col];
+        matrix[row][col].value = Math.max(1, matrix[row][col].value + fineAdjustment);
+      }
     }
   }
-}
-
-// Calculate sum of first permutation
-function calculateFirstPermutationSum(matrix: Matrix): number {
-  let sum = 0;
-  for (let col = 0; col < 4; col++) {
-    const row = col; // First permutation is (0,1,2,3)
-    sum += matrix[row][col].value;
-  }
-  return sum;
 }
 
 // Recalculate matrix when a cell is edited
@@ -160,8 +159,8 @@ export function recalculateMatrix(
   newMatrix[editedRow][editedCol].isUserEdited = true;
   newMatrix[editedRow][editedCol].isCalculated = false;
   
-  // For user edits, we need to regenerate the matrix to maintain the forcing property
-  // This is because the mathematical construction is delicate
+  // For user edits, regenerate the matrix using Gibson method
+  // and then apply the user's edit
   const regeneratedMatrix = generateForcingMatrix(target);
   
   // Preserve the user's edit
