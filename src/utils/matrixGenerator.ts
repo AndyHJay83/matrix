@@ -327,9 +327,9 @@ export function validateMatrix(matrix: Matrix, target: number): boolean {
 // Get validation message
 export function getValidationMessage(matrix: Matrix, target: number): string {
   if (validateMatrix(matrix, target)) {
-    return "✓ Valid Matrix - All Latin Square combinations sum to target";
+    return "✓ Valid Matrix - All combinations sum to target";
   } else {
-    return "⚠ Invalid Matrix - Some Latin Square combinations don't sum to target";
+    return "⚠ Invalid Matrix - Some combinations don't sum to target (consider changing variance slider, or continuing to change cells if editing)";
   }
 }
 
