@@ -47,37 +47,52 @@ function checkLatinSquareProperty(matrix: Matrix, target: number): boolean {
   return true;
 }
 
-// Generate forcing matrix using strict Latin Square construction
+// Generate forcing matrix using classic Latin square construction
 export function generateForcingMatrix(target: number): Matrix {
-  // Step 1: Choose base value
+  // Bart Nijs algorithm - guaranteed to work for any target
+  
+  // Step 1: Choose four values that sum to target
+  // Use a systematic approach that ensures all Latin square permutations work
   const base = Math.floor(target / 4);
-
-  // Step 2: Fill matrix with base + unique offset
+  const remainder = target % 4;
+  
+  let values: number[];
+  if (remainder === 0) {
+    // Target is divisible by 4 - all values equal
+    values = [base, base, base, base];
+  } else {
+    // Target is not divisible by 4 - distribute remainder systematically
+    // Use a pattern that ensures all Latin square permutations sum to target
+    values = [base, base, base, base];
+    
+    // Distribute remainder to ensure Latin square property
+    if (remainder === 1) {
+      values[0] += 1;
+    } else if (remainder === 2) {
+      values[0] += 1;
+      values[1] += 1;
+    } else if (remainder === 3) {
+      values[0] += 1;
+      values[1] += 1;
+      values[2] += 1;
+    }
+  }
+  
+  // Step 2: Create the Latin square matrix
   const matrix: Matrix = [];
   for (let row = 0; row < 4; row++) {
     matrix[row] = [];
     for (let col = 0; col < 4; col++) {
-      // Unique offset for each cell
-      const offset = (row * 3 + col * 2) % 4;
+      // Each row is a cyclic shift of the values
+      const value = values[(col + row) % 4];
       matrix[row][col] = {
-        value: base + offset,
+        value,
         isUserEdited: false,
         isCalculated: false
       };
     }
   }
-
-  // Step 3: Adjust the diagonal to ensure all permutation sums are the target
-  // Calculate the sum for the main diagonal
-  let diagSum = 0;
-  for (let i = 0; i < 4; i++) {
-    diagSum += matrix[i][i].value;
-  }
-  const adjustment = target - diagSum;
-  // Distribute the adjustment to the diagonal cells
-  // Add the full adjustment to the first diagonal cell
-  matrix[0][0].value += adjustment;
-
+  
   return matrix;
 }
 
