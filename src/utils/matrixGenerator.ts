@@ -49,22 +49,33 @@ function checkLatinSquareProperty(matrix: Matrix, target: number): boolean {
 
 // Generate forcing matrix using classic Latin square construction
 export function generateForcingMatrix(target: number): Matrix {
-  // Bart Nijs algorithm - guaranteed to work for any target
+  // Correct forcing matrix algorithm from the article
+  // Choose 8 seed numbers (4 for rows, 4 for columns) that sum to target
   
-  // Step 1: Calculate base values that sum to target
-  const baseValue = Math.floor(target / 4);
-  const remainder = target % 4;
+  // Step 1: Generate 8 seed numbers that sum to target
+  const baseValue = Math.floor(target / 8);
+  const remainder = target % 8;
   
-  // Step 2: Create the matrix with integer values
+  const seeds: number[] = [];
+  for (let i = 0; i < 8; i++) {
+    seeds[i] = baseValue;
+  }
+  
+  // Distribute remainder to make sum exactly target
+  for (let i = 0; i < remainder; i++) {
+    seeds[i] += 1;
+  }
+  
+  // Step 2: Split seeds into row seeds and column seeds
+  const rowSeeds = seeds.slice(0, 4);    // First 4 seeds for rows
+  const colSeeds = seeds.slice(4, 8);    // Last 4 seeds for columns
+  
+  // Step 3: Fill the matrix by adding row seed + column seed for each cell
   const matrix: Matrix = [];
   for (let row = 0; row < 4; row++) {
     matrix[row] = [];
     for (let col = 0; col < 4; col++) {
-      // Distribute the remainder to ensure all values are integers
-      let value = baseValue;
-      if (col < remainder) {
-        value += 1;
-      }
+      const value = rowSeeds[row] + colSeeds[col];
       matrix[row][col] = {
         value,
         isUserEdited: false,
