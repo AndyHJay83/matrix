@@ -147,25 +147,6 @@ function App() {
     setObjects([]);
   };
 
-  // Handle PWA install prompt
-  useEffect(() => {
-    let deferredPrompt: any;
-
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      
-      // You could show an install button here
-      console.log('PWA install prompt available');
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
   return (
     <div className="app">
       <header className="header">
@@ -291,30 +272,6 @@ function App() {
           objects={objects}
           onBack={handleBackToMatrix}
         />
-      )}
-
-      {/* PWA install prompt */}
-      {!isInstalled && viewMode === 'matrix' && (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '1rem', 
-          background: 'var(--surface-color)', 
-          borderRadius: 'var(--border-radius)',
-          marginTop: '2rem'
-        }}>
-          <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
-            Install this app for a better experience
-          </p>
-          <button 
-            className="btn btn-primary"
-            onClick={() => {
-              // This would trigger the install prompt
-              console.log('Install button clicked');
-            }}
-          >
-            Install App
-          </button>
-        </div>
       )}
     </div>
   );
