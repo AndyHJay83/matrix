@@ -25,13 +25,13 @@ const TargetInput: React.FC<TargetInputProps> = ({
     }
   };
 
-  const isValidTarget = target >= 1 && target <= 9999;
+  const isValidTarget = target >= 1 && target <= 9999999;
 
   return (
     <div className="target-section">
       <div className="target-input-group">
         <label htmlFor="target-input" className="target-label">
-          Enter Target Number (1-9999)
+          Enter Target Number (1-9,999,999)
         </label>
         <input
           id="target-input"
@@ -41,7 +41,7 @@ const TargetInput: React.FC<TargetInputProps> = ({
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           min="1"
-          max="9999"
+          max="9999999"
           inputMode="numeric"
           pattern="[0-9]*"
           disabled={disabled}
