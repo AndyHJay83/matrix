@@ -223,11 +223,114 @@ export function recalculateMatrix(
   matrix: Matrix, 
   target: number, 
   editedRow: number, 
-  editedCol: number
+  editedCol: number,
+  newValue: number
 ): Matrix {
-  // For user edits, regenerate the matrix to maintain the forcing property
-  // (User edits are not supported in strict mode)
-  return generateForcingMatrix(target);
+  // Create a new matrix with the edited value
+  const newMatrix: Matrix = matrix.map(row => 
+    row.map(cell => ({ ...cell }))
+  );
+  
+  // Set the edited cell
+  newMatrix[editedRow][editedCol] = {
+    value: newValue,
+    isUserEdited: true,
+    isCalculated: false
+  };
+  
+  // For user edits, we need to recalculate the other cells to maintain the forcing property
+  // This requires solving the system: sum of all seeds = target, and edited cell = newValue
+  
+  // Approach: Use the edited cell constraint to solve for the remaining seeds
+  // Since matrix[i][j] = rowSeed[i] + colSeed[j], we have:
+  // rowSeed[editedRow] + colSeed[editedCol] = newValue
+  
+  // We also know: sum of all 8 seeds = target
+  // So: sum of other 7 seeds = target - newValue
+  
+  // Let's use a minimal variance approach for the remaining seeds
+  const remainingSum = target - newValue;
+  const remainingSeeds = 7; // 8 total - 1 edited
+  
+  const baseValue = Math.floor(remainingSum / remainingSeeds);
+  const remainder = remainingSum % remainingSeeds;
+  
+  // Create seeds for the remaining positions
+  const seeds: number[] = [];
+  
+  // Fill all 8 positions with base values first
+  for (let i = 0; i < 8; i++) {
+    seeds[i] = baseValue;
+  }
+  
+  // Distribute remainder
+  for (let i = 0; i < remainder; i++) {
+    seeds[i] += 1;
+  }
+  
+  // Now we need to ensure the edited cell constraint is satisfied
+  // rowSeed[editedRow] + colSeed[editedCol] = newValue
+  const currentSum = seeds[editedRow] + seeds[editedCol + 4];
+  const difference = newValue - currentSum;
+  
+  if (difference !== 0) {
+    // Adjust the seeds to satisfy the constraint
+    // We'll distribute the difference across the non-edited seeds
+    
+    // Calculate how much to adjust each seed
+    const adjustmentPerSeed = Math.floor(difference / (remainingSeeds - 1));
+    const extraAdjustment = difference % (remainingSeeds - 1);
+    
+    let adjustmentCount = 0;
+    for (let i = 0; i < 8; i++) {
+      if (i !== editedRow && i !== editedCol + 4) {
+        seeds[i] += adjustmentPerSeed;
+        if (adjustmentCount < extraAdjustment) {
+          seeds[i] += 1;
+        }
+        adjustmentCount++;
+      }
+    }
+    
+    // Ensure all seeds are positive
+    const minSeed = Math.min(...seeds);
+    if (minSeed < 1) {
+      const adjustment = 1 - minSeed;
+      for (let i = 0; i < 8; i++) {
+        seeds[i] += adjustment;
+      }
+      // Adjust the last seed to maintain target sum
+      seeds[7] -= adjustment * 8;
+    }
+  }
+  
+  // Split into row and column seeds
+  const rowSeeds = seeds.slice(0, 4);
+  const colSeeds = seeds.slice(4, 8);
+  
+  // Rebuild the matrix with new seeds
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 4; col++) {
+      if (row === editedRow && col === editedCol) {
+        // Keep the user-edited value
+        newMatrix[row][col] = {
+          value: newValue,
+          isUserEdited: true,
+          isCalculated: false
+        };
+      } else {
+        // Calculate new value based on seeds
+        const value = rowSeeds[row] + colSeeds[col];
+        newMatrix[row][col] = {
+          value,
+          isUserEdited: false,
+          isCalculated: true
+        };
+      }
+    }
+  }
+  
+  return newMatrix;
 }
 
 // Validate that all Latin Square combinations sum to target

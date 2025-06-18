@@ -79,7 +79,7 @@ function App() {
 
   const handleCellChange = useCallback((row: number, col: number, value: number) => {
     setMatrix(prevMatrix => {
-      const newMatrix = recalculateMatrix(prevMatrix, target, row, col);
+      const newMatrix = recalculateMatrix(prevMatrix, target, row, col, value);
       return newMatrix;
     });
   }, [target]);
@@ -155,6 +155,12 @@ function App() {
 
       {matrix.length > 0 && (
         <>
+          <div className="matrix-instructions">
+            <p className="subtitle">
+              💡 <strong>Tip:</strong> Click any cell to edit it! The other cells will automatically adjust to maintain the forcing property.
+            </p>
+          </div>
+          
           <MatrixGrid
             matrix={matrix}
             onCellChange={handleCellChange}

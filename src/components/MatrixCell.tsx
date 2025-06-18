@@ -20,9 +20,9 @@ const MatrixCell: React.FC<MatrixCellProps> = ({
     const inputValue = e.target.value;
     const value = parseInt(inputValue) || 0;
     
-    // Ensure only positive integers
-    const positiveValue = Math.max(1, value);
-    onCellChange(row, col, positiveValue);
+    // Allow any positive integer up to 9,999,999
+    const validValue = Math.max(1, Math.min(9999999, value));
+    onCellChange(row, col, validValue);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -82,7 +82,7 @@ const MatrixCell: React.FC<MatrixCellProps> = ({
         onKeyDown={handleKeyDown}
         disabled={disabled}
         min="1"
-        max="9999"
+        max="9999999"
         inputMode="numeric"
         pattern="[0-9]*"
         aria-label={`Matrix cell at row ${row + 1}, column ${col + 1}`}
