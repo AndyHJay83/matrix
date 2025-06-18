@@ -52,4 +52,30 @@ console.log(`\nTesting small target (${smallTarget}) at 100% variance:`);
 smallMatrix.forEach((row, i) => {
   console.log(`Row ${i + 1}: ${row.map(cell => cell.value.toString().padStart(4)).join(' ')}`);
 });
-console.log(`Any negative or zero values: ${hasNegativeOrZero}`); 
+console.log(`Any negative or zero values: ${hasNegativeOrZero}`);
+
+// Test different target sizes to show variance scaling
+console.log('\n' + '='.repeat(60));
+console.log('TESTING VARIANCE SCALING FOR DIFFERENT TARGET SIZES');
+console.log('='.repeat(60));
+
+const testTargets = [500, 1500, 5000, 15000];
+testTargets.forEach(testTarget => {
+  console.log(`\nTarget: ${testTarget} (${testTarget.toString().length} digits)`);
+  const testMatrix = generateForcingMatrix(testTarget, 1.0);
+  const testValues = testMatrix.flat().map(cell => cell.value);
+  const minVal = Math.min(...testValues);
+  const maxVal = Math.max(...testValues);
+  const range = maxVal - minVal;
+  const rangePercent = ((range / testTarget) * 100).toFixed(1);
+  
+  console.log(`Value range: ${minVal} to ${maxVal} (range: ${range}, ${rangePercent}% of target)`);
+  console.log('Matrix:');
+  testMatrix.forEach((row, i) => {
+    console.log(`  ${row.map(cell => cell.value.toString().padStart(4)).join(' ')}`);
+  });
+  
+  // Verify it's still valid
+  const testValid = validateMatrix(testMatrix, testTarget);
+  console.log(`Valid: ${testValid}`);
+}); 

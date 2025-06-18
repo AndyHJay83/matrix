@@ -92,7 +92,16 @@ export function generateForcingMatrix(target: number, variance: number = 0.5): M
       const minAllowed = 1;
       let maxSpread = 2 * baseValue - minAllowed;
       maxSpread = Math.max(0, maxSpread); // never negative
-      let requestedSpread = Math.floor(target / 20); // allow as low as zero
+      
+      // Scale variance based on target size
+      let varianceDivisor = 20; // default conservative
+      if (target >= 5000) {
+        varianceDivisor = 15; // very dramatic for 5+ digits
+      } else if (target >= 1000) {
+        varianceDivisor = 18; // more dramatic for 4+ digits
+      }
+      
+      let requestedSpread = Math.floor(target / varianceDivisor); // allow as low as zero
       let spread = Math.min(requestedSpread, maxSpread);
       let usedMinimal = false;
       if (spread === 0) {
