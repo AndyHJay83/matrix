@@ -82,11 +82,10 @@ const FlashcardView: React.FC<FlashcardViewProps> = ({ objects, onBack }) => {
         >
           <div className="flashcard-front">
             <h2>{currentObject}</h2>
-            <p>Click to reveal other objects in same row and column</p>
+            <p>Click to reveal eliminated choices</p>
           </div>
           <div className="flashcard-back">
             <div className="flashcard-content">
-              <h3>Other Objects in Same Row & Column:</h3>
               <div className="object-list">
                 {Array.from(allOtherObjects).map((obj, index) => (
                   <span 
