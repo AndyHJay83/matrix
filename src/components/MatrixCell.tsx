@@ -17,8 +17,12 @@ const MatrixCell: React.FC<MatrixCellProps> = ({
   disabled = false
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value) || 0;
-    onCellChange(row, col, value);
+    const inputValue = e.target.value;
+    const value = parseInt(inputValue) || 0;
+    
+    // Ensure only positive integers
+    const positiveValue = Math.max(1, value);
+    onCellChange(row, col, positiveValue);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -77,7 +81,7 @@ const MatrixCell: React.FC<MatrixCellProps> = ({
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         disabled={disabled}
-        min="0"
+        min="1"
         max="9999"
         inputMode="numeric"
         pattern="[0-9]*"
