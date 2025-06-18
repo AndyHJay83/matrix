@@ -47,12 +47,6 @@ const Controls: React.FC<ControlsProps> = ({
     }
   };
 
-  const handleExportImage = () => {
-    // This would require a canvas-based implementation
-    // For now, we'll just copy to clipboard
-    handleCopy();
-  };
-
   const handleHapticFeedback = () => {
     if ('vibrate' in navigator) {
       navigator.vibrate(50);
@@ -93,17 +87,6 @@ const Controls: React.FC<ControlsProps> = ({
           disabled={disabled || !isValid}
         >
           Share Matrix
-        </button>
-        
-        <button
-          className="btn btn-secondary"
-          onClick={() => {
-            handleExportImage();
-            handleHapticFeedback();
-          }}
-          disabled={disabled || !isValid}
-        >
-          Export Image
         </button>
       </div>
 

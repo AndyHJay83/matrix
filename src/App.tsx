@@ -10,10 +10,14 @@ import {
 import TargetInput from './components/TargetInput';
 import MatrixGrid from './components/MatrixGrid';
 import Controls from './components/Controls';
+import ObjectInput from './components/ObjectInput';
+import FlashcardView from './components/FlashcardView';
 import './styles/main.css';
 
 // Track user edits: { [col]: { row, value } }
 type UserEdits = { [col: number]: { row: number, value: number } };
+
+type ViewMode = 'matrix' | 'objects' | 'flashcards';
 
 function App() {
   const [target, setTarget] = useState(100);
@@ -24,6 +28,8 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [userEdits, setUserEdits] = useState<UserEdits>({});
+  const [objects, setObjects] = useState<string[][]>([]);
+  const [viewMode, setViewMode] = useState<ViewMode>('matrix');
 
   // Check if app is installed as PWA
   useEffect(() => {
@@ -103,6 +109,25 @@ function App() {
     }
   };
 
+  const handleObjectsSubmit = (objectList: string[]) => {
+    // Convert flat array to 4x4 grid
+    const objectGrid: string[][] = [];
+    for (let i = 0; i < 4; i++) {
+      objectGrid[i] = objectList.slice(i * 4, (i + 1) * 4);
+    }
+    setObjects(objectGrid);
+    setViewMode('objects');
+  };
+
+  const handleStartFlashcards = () => {
+    setViewMode('flashcards');
+  };
+
+  const handleBackToMatrix = () => {
+    setViewMode('matrix');
+    setObjects([]);
+  };
+
   // Handle PWA install prompt
   useEffect(() => {
     let deferredPrompt: any;
@@ -136,66 +161,123 @@ function App() {
         )}
       </header>
 
-      <TargetInput
-        target={target}
-        onTargetChange={handleTargetChange}
-        onGenerate={generateMatrix}
-        disabled={isGenerating}
-      />
-
-      {/* Variance Slider */}
-      <div className="variance-control">
-        <label htmlFor="variance-slider" className="variance-label">
-          Number Variance: {Math.round(variance * 100)}%
-        </label>
-        <input
-          id="variance-slider"
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={variance}
-          onChange={(e) => handleVarianceChange(parseFloat(e.target.value))}
-          className="variance-slider"
-          disabled={isGenerating}
-        />
-        <div className="variance-labels">
-          <span>Similar Numbers</span>
-          <span>Varied Numbers</span>
-        </div>
-      </div>
-
-      {matrix.length > 0 && (
+      {viewMode === 'matrix' && (
         <>
-          <div className="matrix-instructions">
-            <p className="subtitle">
-              💡 <strong>Tip:</strong> Edit one cell per column. The rest will update to maintain the forcing property.
-            </p>
-          </div>
-          
-          <MatrixGrid
-            matrix={matrix}
-            onCellChange={handleCellChange}
-            disabled={isGenerating}
-            userEdits={userEdits}
-          />
-
-          <div className={`validation ${isValid ? 'valid' : 'invalid'}`}>
-            {validationMessage}
-          </div>
-
-          <Controls
-            matrix={matrix}
+          <TargetInput
             target={target}
-            onReset={handleReset}
-            isValid={isValid}
+            onTargetChange={handleTargetChange}
+            onGenerate={generateMatrix}
             disabled={isGenerating}
           />
+
+          {/* Variance Slider */}
+          <div className="variance-control">
+            <label htmlFor="variance-slider" className="variance-label">
+              Number Variance: {Math.round(variance * 100)}%
+            </label>
+            <input
+              id="variance-slider"
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={variance}
+              onChange={(e) => handleVarianceChange(parseFloat(e.target.value))}
+              className="variance-slider"
+              disabled={isGenerating}
+            />
+            <div className="variance-labels">
+              <span>Similar Numbers</span>
+              <span>Varied Numbers</span>
+            </div>
+          </div>
+
+          {matrix.length > 0 && (
+            <>
+              <div className="matrix-instructions">
+                <p className="subtitle">
+                  💡 <strong>Tip:</strong> Edit one cell per column. The rest will update to maintain the forcing property.
+                </p>
+              </div>
+              
+              <MatrixGrid
+                matrix={matrix}
+                onCellChange={handleCellChange}
+                disabled={isGenerating}
+                userEdits={userEdits}
+              />
+
+              <div className={`validation ${isValid ? 'valid' : 'invalid'}`}>
+                {validationMessage}
+              </div>
+
+              <Controls
+                matrix={matrix}
+                target={target}
+                onReset={handleReset}
+                isValid={isValid}
+                disabled={isGenerating}
+              />
+
+              <div className="object-section">
+                <button
+                  className="btn btn-primary btn-large"
+                  onClick={() => setViewMode('objects')}
+                  disabled={isGenerating}
+                >
+                  Assign Objects to Matrix
+                </button>
+              </div>
+            </>
+          )}
         </>
       )}
 
+      {viewMode === 'objects' && (
+        <>
+          <div className="view-header">
+            <button className="btn btn-secondary" onClick={handleBackToMatrix}>
+              ← Back to Matrix
+            </button>
+            <h2>Assign Objects to Matrix</h2>
+          </div>
+
+          <ObjectInput
+            onObjectsSubmit={handleObjectsSubmit}
+            disabled={isGenerating}
+          />
+
+          {objects.length > 0 && (
+            <>
+              <div className="matrix-instructions">
+                <p className="subtitle">
+                  💡 <strong>Objects assigned to matrix:</strong> Click "DONE" when ready to start flashcards.
+                </p>
+              </div>
+              
+              <MatrixGrid
+                matrix={matrix}
+                onCellChange={handleCellChange}
+                disabled={isGenerating}
+                userEdits={userEdits}
+                objects={objects}
+                onDone={handleStartFlashcards}
+                showDoneButton={true}
+              />
+            </>
+          )}
+        </>
+      )}
+
+      {viewMode === 'flashcards' && (
+        <FlashcardView
+          objects={objects}
+          onBack={handleBackToMatrix}
+        />
+      )}
+
       {/* PWA install prompt */}
-      {!isInstalled && (
+      {!isInstalled && viewMode === 'matrix' && (
         <div style={{ 
           textAlign: 'center', 
           padding: '1rem', 

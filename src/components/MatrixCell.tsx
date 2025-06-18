@@ -2,11 +2,12 @@ import React from 'react';
 import type { MatrixCell as MatrixCellType } from '../utils/matrixGenerator';
 
 interface MatrixCellProps {
-  cell: MatrixCellType;
+  cell: MatrixCellType | string;
   row: number;
   col: number;
   onCellChange: (row: number, col: number, value: number) => void;
   disabled?: boolean;
+  isObject?: boolean;
 }
 
 const MatrixCell: React.FC<MatrixCellProps> = ({
@@ -14,9 +15,12 @@ const MatrixCell: React.FC<MatrixCellProps> = ({
   row,
   col,
   onCellChange,
-  disabled = false
+  disabled = false,
+  isObject = false
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isObject) return; // Don't allow editing objects
+    
     const inputValue = e.target.value;
     const value = parseInt(inputValue) || 0;
     
@@ -26,6 +30,8 @@ const MatrixCell: React.FC<MatrixCellProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (isObject) return; // Don't allow navigation for objects
+    
     // Allow navigation with arrow keys
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || 
         e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
@@ -59,10 +65,14 @@ const MatrixCell: React.FC<MatrixCellProps> = ({
   const getInputClassName = () => {
     let className = 'matrix-input';
     
-    if (cell.isUserEdited) {
-      className += ' user-edited';
-    } else if (cell.isCalculated) {
-      className += ' calculated';
+    if (isObject) {
+      className += ' object-cell';
+    } else if (typeof cell === 'object') {
+      if (cell.isUserEdited) {
+        className += ' user-edited';
+      } else if (cell.isCalculated) {
+        className += ' calculated';
+      }
     }
     
     if (disabled) {
@@ -72,20 +82,23 @@ const MatrixCell: React.FC<MatrixCellProps> = ({
     return className;
   };
 
+  const displayValue = typeof cell === 'object' ? cell.value : cell;
+
   return (
     <div className="matrix-cell">
       <input
-        type="number"
+        type={isObject ? "text" : "number"}
         className={getInputClassName()}
-        value={cell.value}
+        value={displayValue}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        disabled={disabled}
-        min="1"
-        max="9999999"
-        inputMode="numeric"
-        pattern="[0-9]*"
-        aria-label={`Matrix cell at row ${row + 1}, column ${col + 1}`}
+        disabled={disabled || isObject}
+        min={isObject ? undefined : "1"}
+        max={isObject ? undefined : "9999999"}
+        inputMode={isObject ? "text" : "numeric"}
+        pattern={isObject ? undefined : "[0-9]*"}
+        aria-label={`${isObject ? 'Object' : 'Matrix cell'} at row ${row + 1}, column ${col + 1}`}
+        readOnly={isObject}
       />
     </div>
   );
