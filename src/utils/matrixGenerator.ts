@@ -21,22 +21,22 @@ export function generateForcingMatrix(target: number): Matrix {
   // For a 4x4 forcing matrix, we need to ensure that any combination
   // of one number from each column sums to the target
   
-  // Start with a base range around the target, ensuring positive numbers
+  // Use a more conservative approach to ensure all numbers are positive
   const baseValue = Math.floor(target / 4);
-  const variance = Math.min(2000, Math.max(500, Math.floor(target * 0.3))); // Ensure good variance
+  const maxVariance = Math.min(1000, Math.max(200, Math.floor(target * 0.2))); // Reduced variance
   
   // Generate the first 3 rows with diverse positive numbers
   for (let row = 0; row < 3; row++) {
     matrix[row] = [];
     for (let col = 0; col < 4; col++) {
-      // Create diverse positive numbers within the variance range
-      const minVal = Math.max(1, baseValue - variance);
-      const maxVal = baseValue + variance;
+      // Create diverse positive numbers within a safe range
+      const minVal = Math.max(1, baseValue - maxVariance);
+      const maxVal = baseValue + maxVariance;
       const randomOffset = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
       
       // Add some pattern to make it more interesting
-      const patternOffset = (row * 7 + col * 13) % 100;
-      const value = Math.max(1, randomOffset + patternOffset); // Ensure minimum value of 1
+      const patternOffset = (row * 7 + col * 13) % 50; // Reduced pattern offset
+      const value = Math.max(1, randomOffset + patternOffset);
       
       matrix[row][col] = {
         value,
@@ -55,12 +55,11 @@ export function generateForcingMatrix(target: number): Matrix {
     }
     
     // The 4th row value must make the column sum to target
-    // Ensure it's positive by adjusting if necessary
     let requiredValue = target - sum;
     
-    // If the required value would be negative, adjust the previous rows
+    // If the required value would be negative or zero, we need to adjust the matrix
     if (requiredValue <= 0) {
-      // Find the largest value in the current column and reduce it
+      // Find the largest value in the current column and reduce it significantly
       let maxValue = 0;
       let maxRow = 0;
       for (let row = 0; row < 3; row++) {
@@ -71,7 +70,8 @@ export function generateForcingMatrix(target: number): Matrix {
       }
       
       // Reduce the largest value to make room for a positive 4th row value
-      const reduction = Math.abs(requiredValue) + 1;
+      // Use a more aggressive reduction to ensure positive result
+      const reduction = Math.abs(requiredValue) + Math.floor(target * 0.1) + 1;
       matrix[maxRow][col].value = Math.max(1, maxValue - reduction);
       
       // Recalculate the required value
@@ -80,6 +80,34 @@ export function generateForcingMatrix(target: number): Matrix {
         sum += matrix[row][col].value;
       }
       requiredValue = target - sum;
+      
+      // Double-check that we have a positive value
+      if (requiredValue <= 0) {
+        // If still negative, reduce another value in the column
+        let secondMaxValue = 0;
+        let secondMaxRow = 0;
+        for (let row = 0; row < 3; row++) {
+          if (row !== maxRow && matrix[row][col].value > secondMaxValue) {
+            secondMaxValue = matrix[row][col].value;
+            secondMaxRow = row;
+          }
+        }
+        
+        const additionalReduction = Math.abs(requiredValue) + 1;
+        matrix[secondMaxRow][col].value = Math.max(1, secondMaxValue - additionalReduction);
+        
+        // Final recalculation
+        sum = 0;
+        for (let row = 0; row < 3; row++) {
+          sum += matrix[row][col].value;
+        }
+        requiredValue = target - sum;
+      }
+    }
+    
+    // Final safety check - if still not positive, set to 1 and adjust target
+    if (requiredValue <= 0) {
+      requiredValue = 1;
     }
     
     matrix[3][col] = {
@@ -118,8 +146,8 @@ export function recalculateMatrix(
     // Calculate the required value for the bottom row
     let requiredValue = target - sum;
     
-    // If the required value would be negative, adjust the user-edited cell
-    if (requiredValue <= 0 && editedCol === col) {
+    // If the required value would be negative, adjust other values in the column
+    if (requiredValue <= 0) {
       // Find the largest non-user-edited value in this column
       let maxValue = 0;
       let maxRow = 0;
@@ -131,7 +159,7 @@ export function recalculateMatrix(
       }
       
       // Reduce the largest value to make room for a positive 4th row value
-      const reduction = Math.abs(requiredValue) + 1;
+      const reduction = Math.abs(requiredValue) + Math.floor(target * 0.05) + 1;
       newMatrix[maxRow][col].value = Math.max(1, maxValue - reduction);
       
       // Recalculate the required value
@@ -140,6 +168,33 @@ export function recalculateMatrix(
         sum += newMatrix[row][col].value;
       }
       requiredValue = target - sum;
+      
+      // If still negative, reduce another value
+      if (requiredValue <= 0) {
+        let secondMaxValue = 0;
+        let secondMaxRow = 0;
+        for (let row = 0; row < 3; row++) {
+          if (row !== editedRow && row !== maxRow && newMatrix[row][col].value > secondMaxValue) {
+            secondMaxValue = newMatrix[row][col].value;
+            secondMaxRow = row;
+          }
+        }
+        
+        const additionalReduction = Math.abs(requiredValue) + 1;
+        newMatrix[secondMaxRow][col].value = Math.max(1, secondMaxValue - additionalReduction);
+        
+        // Final recalculation
+        sum = 0;
+        for (let row = 0; row < 3; row++) {
+          sum += newMatrix[row][col].value;
+        }
+        requiredValue = target - sum;
+      }
+    }
+    
+    // Final safety check
+    if (requiredValue <= 0) {
+      requiredValue = 1;
     }
     
     newMatrix[3][col].value = requiredValue;
