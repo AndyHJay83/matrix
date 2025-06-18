@@ -53,155 +53,138 @@ export function generateForcingMatrix(target: number, variance: number = 0.5): M
   // Choose 8 seed numbers (4 for rows, 4 for columns) that sum to target
   // variance: 0 = minimal variance, 1 = maximum variance
   
-  // Step 1: Generate 8 diverse seed numbers that sum to target
-  const baseValue = Math.floor(target / 8);
-  const remainder = target % 8;
-  
-  // Create seed values with adjustable variance
+  // Step 1: Generate 8 seed numbers that sum to the target
   const seeds: number[] = [];
+  const baseValue = Math.floor(target / 8);
   
-  // Calculate variance multiplier (0 = minimal, 1 = maximum)
-  const varianceMultiplier = Math.max(0, Math.min(1, variance));
+  // Shift variance scale: 0% = old 80%, 100% = old 100%
+  // This means we map 0-1 to 0.8-1.0
+  const shiftedVariance = 0.8 + (variance * 0.2);
   
-  // For variance = 0, use minimal variance (all values close to base)
-  if (varianceMultiplier === 0) {
-    // Distribute the target evenly with minimal variance
-    for (let i = 0; i < 8; i++) {
-      seeds[i] = baseValue;
-    }
-    // Distribute remainder
-    for (let i = 0; i < remainder; i++) {
-      seeds[i] += 1;
-    }
-  } else {
-    // For variance > 0, use a systematic approach that ensures perfect accuracy
-    // and unique numbers at 100% variance
+  if (shiftedVariance >= 0.8) {
+    // High variance: create dramatic but more balanced differences
+    let baseVariance: number;
     
-    // Calculate variance range based on target size
-    const maxVariance = Math.max(1, Math.floor(target / 50)); // Conservative variance
-    const varianceRange = Math.floor(maxVariance * varianceMultiplier);
-    
-    // Create a pattern that ensures all permutations still work perfectly
-    // Use different patterns for different variance levels to avoid repetition
-    
-    if (varianceMultiplier >= 0.8) {
-      // High variance: create dramatic but more balanced differences
-      let baseVariance: number;
-      
-      if (target <= 100) {
-        baseVariance = Math.max(5, Math.floor(target / 8));
-      } else if (target <= 1000) {
-        baseVariance = Math.max(10, Math.floor(target / 12));
-      } else if (target <= 10000) {
-        baseVariance = Math.max(50, Math.floor(target / 15));
-      } else {
-        baseVariance = Math.max(100, Math.floor(target / 18));
-      }
-      
-      // Create more balanced "organic" seed offsets (reduced extreme multipliers)
-      const organicOffsets = [
-        Math.floor(baseVariance * 0.6),      // 0.6x (was 0.8x)
-        Math.floor(baseVariance * -0.8),     // -0.8x (was -1.2x)
-        Math.floor(baseVariance * 0.2),      // 0.2x (was 0.3x)
-        Math.floor(baseVariance * 1.2),      // 1.2x (was 1.7x)
-        Math.floor(baseVariance * 0.8),      // 0.8x (was 1.1x)
-        Math.floor(baseVariance * -0.6),     // -0.6x (was -0.9x)
-        Math.floor(baseVariance * 0.4),      // 0.4x (was 0.6x)
-        Math.floor(baseVariance * 1.0)       // 1.0x (was 1.4x)
-      ];
-      
-      // Add some "jitter" to make numbers more organic (reduced jitter)
-      const jitter = Math.max(1, Math.floor(baseVariance * 0.05)); // was 0.1
-      for (let i = 0; i < 8; i++) {
-        organicOffsets[i] += Math.floor(Math.random() * jitter) - Math.floor(jitter / 2);
-      }
-      
-      // Create seeds with organic offsets
-      for (let i = 0; i < 8; i++) {
-        seeds[i] = baseValue + organicOffsets[i];
-      }
-      
-      // Adjust to sum exactly to target
-      let currentSum = seeds.reduce((sum, seed) => sum + seed, 0);
-      let diff = target - currentSum;
-      
-      // Distribute the difference organically (not evenly)
-      const distribution = [0.3, 0.2, 0.15, 0.1, 0.1, 0.05, 0.05, 0.05]; // weighted distribution
-      for (let i = 0; i < 8; i++) {
-        seeds[i] += Math.floor(diff * distribution[i]);
-      }
-      
-      // Final adjustment to ensure exact sum
-      currentSum = seeds.reduce((sum, seed) => sum + seed, 0);
-      seeds[7] += (target - currentSum);
-      
-      // Ensure all matrix values are positive and reasonably balanced
-      const rowSeeds = seeds.slice(0, 4);
-      const colSeeds = seeds.slice(4, 8);
-      let minValue = Math.min(...rowSeeds.map(r => Math.min(...colSeeds.map(c => r + c))));
-      
-      if (minValue < 1) {
-        // Shift all seeds up to make minimum value 1
-        const shift = 1 - minValue;
-        for (let i = 0; i < 4; i++) {
-          rowSeeds[i] += shift;
-        }
-        for (let i = 0; i < 4; i++) {
-          colSeeds[i] += shift;
-        }
-        // Adjust last colSeed to maintain sum
-        const newSeeds = [...rowSeeds, ...colSeeds];
-        const newSum = newSeeds.reduce((a, b) => a + b, 0);
-        colSeeds[3] += (target - newSum);
-        // Update seeds array
-        for (let i = 0; i < 4; i++) seeds[i] = rowSeeds[i];
-        for (let i = 0; i < 4; i++) seeds[4 + i] = colSeeds[i];
-      }
-      
-      // Additional balance check: ensure no single value is too extreme
-      const maxValue = Math.max(...rowSeeds.map(r => Math.max(...colSeeds.map(c => r + c))));
-      const minValue2 = Math.min(...rowSeeds.map(r => Math.min(...colSeeds.map(c => r + c))));
-      const range = maxValue - minValue2;
-      
-      // If range is too extreme, reduce variance
-      if (range > target * 0.8) { // If range is more than 80% of target
-        const reductionFactor = (target * 0.6) / range; // Aim for 60% of target as range
-        for (let i = 0; i < 8; i++) {
-          const offset = seeds[i] - baseValue;
-          seeds[i] = baseValue + Math.floor(offset * reductionFactor);
-        }
-        
-        // Re-adjust to maintain target sum
-        currentSum = seeds.reduce((sum, seed) => sum + seed, 0);
-        seeds[7] += (target - currentSum);
-      }
+    if (target <= 100) {
+      baseVariance = Math.max(5, Math.floor(target / 8));
+    } else if (target <= 1000) {
+      baseVariance = Math.max(10, Math.floor(target / 12));
+    } else if (target <= 10000) {
+      baseVariance = Math.max(50, Math.floor(target / 15));
     } else {
-      // Medium variance: use balanced pattern
-      seeds[0] = baseValue - varianceRange;
-      seeds[1] = baseValue - varianceRange + 1;
-      seeds[2] = baseValue + varianceRange;
-      seeds[3] = baseValue + varianceRange - 1;
-      seeds[4] = baseValue + varianceRange + 1;
-      seeds[5] = baseValue - varianceRange - 1;
-      seeds[6] = baseValue + varianceRange - 2;
-      seeds[7] = baseValue - varianceRange + 2;
+      baseVariance = Math.max(100, Math.floor(target / 18));
     }
     
-    // Distribute remainder to make sum exactly target
-    // Use a systematic approach to avoid breaking the pattern
+    // Scale the variance based on how far we are from 0.8 to 1.0
+    const varianceScale = (shiftedVariance - 0.8) / 0.2; // 0 to 1
+    
+    // Create more balanced "organic" seed offsets (reduced extreme multipliers)
+    const organicOffsets = [
+      Math.floor(baseVariance * 0.6 * varianceScale),      // 0.6x scaled
+      Math.floor(baseVariance * -0.8 * varianceScale),     // -0.8x scaled
+      Math.floor(baseVariance * 0.2 * varianceScale),      // 0.2x scaled
+      Math.floor(baseVariance * 1.2 * varianceScale),      // 1.2x scaled
+      Math.floor(baseVariance * 0.8 * varianceScale),      // 0.8x scaled
+      Math.floor(baseVariance * -0.6 * varianceScale),     // -0.6x scaled
+      Math.floor(baseVariance * 0.4 * varianceScale),      // 0.4x scaled
+      Math.floor(baseVariance * 1.0 * varianceScale)       // 1.0x scaled
+    ];
+    
+    // Add some "jitter" to make numbers more organic (reduced jitter)
+    const jitter = Math.max(1, Math.floor(baseVariance * 0.05 * varianceScale)); // scaled jitter
+    for (let i = 0; i < 8; i++) {
+      organicOffsets[i] += Math.floor(Math.random() * jitter) - Math.floor(jitter / 2);
+    }
+    
+    // Create seeds with organic offsets
+    for (let i = 0; i < 8; i++) {
+      seeds[i] = baseValue + organicOffsets[i];
+    }
+    
+    // Adjust to sum exactly to target
     let currentSum = seeds.reduce((sum, seed) => sum + seed, 0);
     let diff = target - currentSum;
     
-    if (diff !== 0) {
-      // Distribute the difference evenly across seeds
-      const adjustment = Math.floor(diff / 8);
-      const extraAdjustment = diff % 8;
-      
+    // Distribute the difference organically (not evenly)
+    const distribution = [0.3, 0.2, 0.15, 0.1, 0.1, 0.05, 0.05, 0.05]; // weighted distribution
+    for (let i = 0; i < 8; i++) {
+      seeds[i] += Math.floor(diff * distribution[i]);
+    }
+    
+    // Final adjustment to ensure exact sum
+    currentSum = seeds.reduce((sum, seed) => sum + seed, 0);
+    seeds[7] += (target - currentSum);
+    
+    // Ensure all matrix values are positive and reasonably balanced
+    const rowSeeds = seeds.slice(0, 4);
+    const colSeeds = seeds.slice(4, 8);
+    let minValue = Math.min(...rowSeeds.map(r => Math.min(...colSeeds.map(c => r + c))));
+    
+    if (minValue < 1) {
+      // Shift all seeds up to make minimum value 1
+      const shift = 1 - minValue;
+      for (let i = 0; i < 4; i++) {
+        rowSeeds[i] += shift;
+      }
+      for (let i = 0; i < 4; i++) {
+        colSeeds[i] += shift;
+      }
+      // Adjust last colSeed to maintain sum
+      const newSeeds = [...rowSeeds, ...colSeeds];
+      const newSum = newSeeds.reduce((a, b) => a + b, 0);
+      colSeeds[3] += (target - newSum);
+      // Update seeds array
+      for (let i = 0; i < 4; i++) seeds[i] = rowSeeds[i];
+      for (let i = 0; i < 4; i++) seeds[4 + i] = colSeeds[i];
+    }
+    
+    // Additional balance check: ensure no single value is too extreme
+    const maxValue = Math.max(...rowSeeds.map(r => Math.max(...colSeeds.map(c => r + c))));
+    const minValue2 = Math.min(...rowSeeds.map(r => Math.min(...colSeeds.map(c => r + c))));
+    const range = maxValue - minValue2;
+    
+    // If range is too extreme, reduce variance
+    if (range > target * 0.8) { // If range is more than 80% of target
+      const reductionFactor = (target * 0.6) / range; // Aim for 60% of target as range
       for (let i = 0; i < 8; i++) {
-        seeds[i] += adjustment;
-        if (i < extraAdjustment) {
-          seeds[i] += 1;
-        }
+        const offset = seeds[i] - baseValue;
+        seeds[i] = baseValue + Math.floor(offset * reductionFactor);
+      }
+      
+      // Re-adjust to maintain target sum
+      currentSum = seeds.reduce((sum, seed) => sum + seed, 0);
+      seeds[7] += (target - currentSum);
+    }
+  } else {
+    // This should never happen now since shiftedVariance will always be >= 0.8
+    // But keeping as fallback for safety
+    const varianceRange = Math.floor(Math.max(1, Math.floor(target / 50)) * shiftedVariance);
+    
+    // Medium variance: use balanced pattern
+    seeds[0] = baseValue - varianceRange;
+    seeds[1] = baseValue - varianceRange + 1;
+    seeds[2] = baseValue + varianceRange;
+    seeds[3] = baseValue + varianceRange - 1;
+    seeds[4] = baseValue + varianceRange + 1;
+    seeds[5] = baseValue - varianceRange - 1;
+    seeds[6] = baseValue + varianceRange - 2;
+    seeds[7] = baseValue - varianceRange + 2;
+  }
+  
+  // Distribute remainder to make sum exactly target
+  // Use a systematic approach to avoid breaking the pattern
+  let currentSum = seeds.reduce((sum, seed) => sum + seed, 0);
+  let diff = target - currentSum;
+  
+  if (diff !== 0) {
+    // Distribute the difference evenly across seeds
+    const adjustment = Math.floor(diff / 8);
+    const extraAdjustment = diff % 8;
+    
+    for (let i = 0; i < 8; i++) {
+      seeds[i] += adjustment;
+      if (i < extraAdjustment) {
+        seeds[i] += 1;
       }
     }
   }
