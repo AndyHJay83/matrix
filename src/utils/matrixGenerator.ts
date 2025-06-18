@@ -86,15 +86,27 @@ export function generateForcingMatrix(target: number, variance: number = 0.5): M
     
     if (varianceMultiplier >= 0.8) {
       // High variance: use more dramatic differences and ensure uniqueness
-      const dramaticRange = Math.max(2, Math.floor(target / 30));
-      seeds[0] = baseValue - dramaticRange;
-      seeds[1] = baseValue - dramaticRange + 1;
-      seeds[2] = baseValue + dramaticRange;
-      seeds[3] = baseValue + dramaticRange - 1;
-      seeds[4] = baseValue + dramaticRange + 1;
-      seeds[5] = baseValue - dramaticRange - 1;
-      seeds[6] = baseValue + dramaticRange - 2;
-      seeds[7] = baseValue - dramaticRange + 2;
+      // Guarantee all 16 numbers are unique by using strictly increasing row/col seeds
+      // r0 < r1 < r2 < r3, c0 < c1 < c2 < c3, and all (ri+cj) unique
+      const spread = Math.max(4, Math.floor(target / 20));
+      // Make row seeds spaced by spread, and col seeds by a different offset
+      const rowBase = baseValue - 2 * spread;
+      const colBase = baseValue + spread;
+      seeds[0] = rowBase;
+      seeds[1] = rowBase + spread;
+      seeds[2] = rowBase + 2 * spread;
+      seeds[3] = rowBase + 3 * spread;
+      seeds[4] = colBase;
+      seeds[5] = colBase + spread + 1;
+      seeds[6] = colBase + 2 * spread + 2;
+      seeds[7] = colBase + 3 * spread + 3;
+      // Adjust all seeds to sum to target
+      let currentSum = seeds.reduce((sum, seed) => sum + seed, 0);
+      let diff = target - currentSum;
+      // Distribute diff
+      for (let i = 0; i < Math.abs(diff); i++) {
+        seeds[i % 8] += diff > 0 ? 1 : -1;
+      }
     } else {
       // Medium variance: use balanced pattern
       seeds[0] = baseValue - varianceRange;
