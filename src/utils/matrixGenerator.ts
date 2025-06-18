@@ -74,26 +74,55 @@ export function generateForcingMatrix(target: number, variance: number = 0.5): M
       seeds[i] += 1;
     }
   } else {
-    // For variance > 0, use a different approach that maintains forcing property
-    // Use a systematic pattern that ensures all permutations still work
+    // For variance > 0, use a systematic approach that ensures perfect accuracy
+    // and unique numbers at 100% variance
     
     // Calculate variance range based on target size
-    const maxVariance = Math.max(1, Math.floor(target / 40)); // Smaller variance to maintain accuracy
+    const maxVariance = Math.max(1, Math.floor(target / 50)); // Conservative variance
     const varianceRange = Math.floor(maxVariance * varianceMultiplier);
     
-    // Create a balanced pattern that maintains the forcing property
-    seeds[0] = baseValue - varianceRange;
-    seeds[1] = baseValue - varianceRange;
-    seeds[2] = baseValue + varianceRange;
-    seeds[3] = baseValue + varianceRange;
-    seeds[4] = baseValue + varianceRange;
-    seeds[5] = baseValue - varianceRange;
-    seeds[6] = baseValue + varianceRange;
-    seeds[7] = baseValue - varianceRange;
+    // Create a pattern that ensures all permutations still work perfectly
+    // Use different patterns for different variance levels to avoid repetition
+    
+    if (varianceMultiplier >= 0.8) {
+      // High variance: use more dramatic differences and ensure uniqueness
+      const dramaticRange = Math.max(2, Math.floor(target / 30));
+      seeds[0] = baseValue - dramaticRange;
+      seeds[1] = baseValue - dramaticRange + 1;
+      seeds[2] = baseValue + dramaticRange;
+      seeds[3] = baseValue + dramaticRange - 1;
+      seeds[4] = baseValue + dramaticRange + 1;
+      seeds[5] = baseValue - dramaticRange - 1;
+      seeds[6] = baseValue + dramaticRange - 2;
+      seeds[7] = baseValue - dramaticRange + 2;
+    } else {
+      // Medium variance: use balanced pattern
+      seeds[0] = baseValue - varianceRange;
+      seeds[1] = baseValue - varianceRange + 1;
+      seeds[2] = baseValue + varianceRange;
+      seeds[3] = baseValue + varianceRange - 1;
+      seeds[4] = baseValue + varianceRange + 1;
+      seeds[5] = baseValue - varianceRange - 1;
+      seeds[6] = baseValue + varianceRange - 2;
+      seeds[7] = baseValue - varianceRange + 2;
+    }
     
     // Distribute remainder to make sum exactly target
-    for (let i = 0; i < remainder; i++) {
-      seeds[2 + i] += 1;
+    // Use a systematic approach to avoid breaking the pattern
+    let currentSum = seeds.reduce((sum, seed) => sum + seed, 0);
+    let diff = target - currentSum;
+    
+    if (diff !== 0) {
+      // Distribute the difference evenly across seeds
+      const adjustment = Math.floor(diff / 8);
+      const extraAdjustment = diff % 8;
+      
+      for (let i = 0; i < 8; i++) {
+        seeds[i] += adjustment;
+        if (i < extraAdjustment) {
+          seeds[i] += 1;
+        }
+      }
     }
   }
   
@@ -106,6 +135,13 @@ export function generateForcingMatrix(target: number, variance: number = 0.5): M
     }
     // Adjust the last seed to maintain target sum
     seeds[7] -= adjustment * 8;
+  }
+  
+  // Final verification: ensure sum is exactly target
+  let finalSum = seeds.reduce((sum, seed) => sum + seed, 0);
+  if (finalSum !== target) {
+    // Make a small adjustment to the last seed
+    seeds[7] += (target - finalSum);
   }
   
   // Step 2: Split seeds into row seeds and column seeds
