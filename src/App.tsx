@@ -30,14 +30,14 @@ function App() {
 
   // Generate initial matrix
   useEffect(() => {
-    if (target >= 1 && target <= 9999) {
+    if (target >= 1 && target <= 9999999) {
       generateMatrix();
     }
   }, []);
 
   // Regenerate matrix when variance changes
   useEffect(() => {
-    if (target >= 1 && target <= 9999 && matrix.length > 0) {
+    if (target >= 1 && target <= 9999999 && matrix.length > 0) {
       generateMatrix();
     }
   }, [variance]);
@@ -52,7 +52,7 @@ function App() {
   }, [matrix, target]);
 
   const generateMatrix = useCallback(async () => {
-    if (target < 1 || target > 9999) return;
+    if (target < 1 || target > 9999999) return;
     
     setIsGenerating(true);
     
@@ -85,7 +85,7 @@ function App() {
   }, [target]);
 
   const handleReset = () => {
-    if (target >= 1 && target <= 9999) {
+    if (target >= 1 && target <= 9999999) {
       const newMatrix = resetMatrix(target, variance);
       setMatrix(newMatrix);
     }
