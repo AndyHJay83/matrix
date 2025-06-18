@@ -85,35 +85,33 @@ export function generateForcingMatrix(target: number, variance: number = 0.5): M
     // Use different patterns for different variance levels to avoid repetition
     
     if (varianceMultiplier >= 0.8) {
-      // Bart-style high variance: organic-looking numbers with dramatic variance
-      // Use "messy" seed offsets and allow negative values for dramatic effect
+      // High variance: create dramatic but more balanced differences
+      let baseVariance: number;
       
-      // Calculate base variance based on target size
-      let baseVariance = Math.floor(target / 20); // conservative base
-      if (target >= 1000000) { // 7 digits
-        baseVariance = Math.floor(target / 8);
-      } else if (target >= 100000) { // 6 digits
-        baseVariance = Math.floor(target / 12);
-      } else if (target >= 5000) {
-        baseVariance = Math.floor(target / 15);
-      } else if (target >= 1000) {
-        baseVariance = Math.floor(target / 18);
+      if (target <= 100) {
+        baseVariance = Math.max(5, Math.floor(target / 8));
+      } else if (target <= 1000) {
+        baseVariance = Math.max(10, Math.floor(target / 12));
+      } else if (target <= 10000) {
+        baseVariance = Math.max(50, Math.floor(target / 15));
+      } else {
+        baseVariance = Math.max(100, Math.floor(target / 18));
       }
       
-      // Create "organic" seed offsets (not clean multiples)
+      // Create more balanced "organic" seed offsets (reduced extreme multipliers)
       const organicOffsets = [
-        Math.floor(baseVariance * 0.8),      // 0.8x
-        Math.floor(baseVariance * -1.2),     // -1.2x (negative for drama)
-        Math.floor(baseVariance * 0.3),      // 0.3x
-        Math.floor(baseVariance * 1.7),      // 1.7x
-        Math.floor(baseVariance * 1.1),      // 1.1x
-        Math.floor(baseVariance * -0.9),     // -0.9x (negative)
-        Math.floor(baseVariance * 0.6),      // 0.6x
-        Math.floor(baseVariance * 1.4)       // 1.4x
+        Math.floor(baseVariance * 0.6),      // 0.6x (was 0.8x)
+        Math.floor(baseVariance * -0.8),     // -0.8x (was -1.2x)
+        Math.floor(baseVariance * 0.2),      // 0.2x (was 0.3x)
+        Math.floor(baseVariance * 1.2),      // 1.2x (was 1.7x)
+        Math.floor(baseVariance * 0.8),      // 0.8x (was 1.1x)
+        Math.floor(baseVariance * -0.6),     // -0.6x (was -0.9x)
+        Math.floor(baseVariance * 0.4),      // 0.4x (was 0.6x)
+        Math.floor(baseVariance * 1.0)       // 1.0x (was 1.4x)
       ];
       
-      // Add some "jitter" to make numbers more organic
-      const jitter = Math.max(1, Math.floor(baseVariance * 0.1));
+      // Add some "jitter" to make numbers more organic (reduced jitter)
+      const jitter = Math.max(1, Math.floor(baseVariance * 0.05)); // was 0.1
       for (let i = 0; i < 8; i++) {
         organicOffsets[i] += Math.floor(Math.random() * jitter) - Math.floor(jitter / 2);
       }
@@ -137,7 +135,7 @@ export function generateForcingMatrix(target: number, variance: number = 0.5): M
       currentSum = seeds.reduce((sum, seed) => sum + seed, 0);
       seeds[7] += (target - currentSum);
       
-      // Ensure all matrix values are positive (but allow negative seeds)
+      // Ensure all matrix values are positive and reasonably balanced
       const rowSeeds = seeds.slice(0, 4);
       const colSeeds = seeds.slice(4, 8);
       let minValue = Math.min(...rowSeeds.map(r => Math.min(...colSeeds.map(c => r + c))));
@@ -158,6 +156,24 @@ export function generateForcingMatrix(target: number, variance: number = 0.5): M
         // Update seeds array
         for (let i = 0; i < 4; i++) seeds[i] = rowSeeds[i];
         for (let i = 0; i < 4; i++) seeds[4 + i] = colSeeds[i];
+      }
+      
+      // Additional balance check: ensure no single value is too extreme
+      const maxValue = Math.max(...rowSeeds.map(r => Math.max(...colSeeds.map(c => r + c))));
+      const minValue2 = Math.min(...rowSeeds.map(r => Math.min(...colSeeds.map(c => r + c))));
+      const range = maxValue - minValue2;
+      
+      // If range is too extreme, reduce variance
+      if (range > target * 0.8) { // If range is more than 80% of target
+        const reductionFactor = (target * 0.6) / range; // Aim for 60% of target as range
+        for (let i = 0; i < 8; i++) {
+          const offset = seeds[i] - baseValue;
+          seeds[i] = baseValue + Math.floor(offset * reductionFactor);
+        }
+        
+        // Re-adjust to maintain target sum
+        currentSum = seeds.reduce((sum, seed) => sum + seed, 0);
+        seeds[7] += (target - currentSum);
       }
     } else {
       // Medium variance: use balanced pattern
