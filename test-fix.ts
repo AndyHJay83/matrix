@@ -41,4 +41,15 @@ if (allValues.length !== uniqueValues.size) {
       console.log(`  ${val} appears ${count} times`);
     }
   });
-} 
+}
+
+// Test for small target, check for negative or zero values
+const smallTarget = 100;
+const smallMatrix = generateForcingMatrix(smallTarget, 1.0);
+const smallValues = smallMatrix.flat().map(cell => cell.value);
+const hasNegativeOrZero = smallValues.some(v => v < 1);
+console.log(`\nTesting small target (${smallTarget}) at 100% variance:`);
+smallMatrix.forEach((row, i) => {
+  console.log(`Row ${i + 1}: ${row.map(cell => cell.value.toString().padStart(4)).join(' ')}`);
+});
+console.log(`Any negative or zero values: ${hasNegativeOrZero}`); 

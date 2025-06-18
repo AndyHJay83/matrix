@@ -88,24 +88,63 @@ export function generateForcingMatrix(target: number, variance: number = 0.5): M
       // High variance: use more dramatic differences and ensure uniqueness
       // Guarantee all 16 numbers are unique by using strictly increasing row/col seeds
       // r0 < r1 < r2 < r3, c0 < c1 < c2 < c3, and all (ri+cj) unique
-      const spread = Math.max(4, Math.floor(target / 20));
-      // Make row seeds spaced by spread, and col seeds by a different offset
-      const rowBase = baseValue - 2 * spread;
-      const colBase = baseValue + spread;
-      seeds[0] = rowBase;
-      seeds[1] = rowBase + spread;
-      seeds[2] = rowBase + 2 * spread;
-      seeds[3] = rowBase + 3 * spread;
-      seeds[4] = colBase;
-      seeds[5] = colBase + spread + 1;
-      seeds[6] = colBase + 2 * spread + 2;
-      seeds[7] = colBase + 3 * spread + 3;
-      // Adjust all seeds to sum to target
-      let currentSum = seeds.reduce((sum, seed) => sum + seed, 0);
-      let diff = target - currentSum;
-      // Distribute diff
-      for (let i = 0; i < Math.abs(diff); i++) {
-        seeds[i % 8] += diff > 0 ? 1 : -1;
+      // Dynamically cap spread so all values are positive
+      const minAllowed = 1;
+      let maxSpread = 2 * baseValue - minAllowed;
+      maxSpread = Math.max(0, maxSpread); // never negative
+      let requestedSpread = Math.floor(target / 20); // allow as low as zero
+      let spread = Math.min(requestedSpread, maxSpread);
+      let usedMinimal = false;
+      if (spread === 0) {
+        // Fallback to minimal-variance algorithm for small targets
+        for (let i = 0; i < 8; i++) {
+          seeds[i] = baseValue;
+        }
+        for (let i = 0; i < remainder; i++) {
+          seeds[i] += 1;
+        }
+        usedMinimal = true;
+      } else {
+        let rowBase = baseValue - 2 * spread;
+        let colBase = baseValue + spread;
+        seeds[0] = rowBase;
+        seeds[1] = rowBase + spread;
+        seeds[2] = rowBase + 2 * spread;
+        seeds[3] = rowBase + 3 * spread;
+        seeds[4] = colBase;
+        seeds[5] = colBase + spread + 1;
+        seeds[6] = colBase + 2 * spread + 2;
+        seeds[7] = colBase + 3 * spread + 3;
+        // Adjust all seeds to sum to target
+        let currentSum = seeds.reduce((sum, seed) => sum + seed, 0);
+        let diff = target - currentSum;
+        for (let i = 0; i < Math.abs(diff); i++) {
+          seeds[i % 8] += diff > 0 ? 1 : -1;
+        }
+        // Ensure all seeds are positive
+        let minSeed = Math.min(...seeds);
+        if (minSeed < 1) {
+          const adjustment = 1 - minSeed;
+          for (let i = 0; i < 8; i++) {
+            seeds[i] += adjustment;
+          }
+          // Adjust the last seed to maintain target sum
+          seeds[7] -= adjustment * 8;
+        }
+        // Final check: if any matrix value is < 1, shift all up
+        const rowSeeds = seeds.slice(0, 4);
+        const colSeeds = seeds.slice(4, 8);
+        let minValue = Math.min(...rowSeeds.map(r => Math.min(...colSeeds.map(c => r + c))));
+        if (minValue < 1) {
+          // Fallback to minimal-variance algorithm
+          for (let i = 0; i < 8; i++) {
+            seeds[i] = baseValue;
+          }
+          for (let i = 0; i < remainder; i++) {
+            seeds[i] += 1;
+          }
+          usedMinimal = true;
+        }
       }
     } else {
       // Medium variance: use balanced pattern
@@ -136,17 +175,6 @@ export function generateForcingMatrix(target: number, variance: number = 0.5): M
         }
       }
     }
-  }
-  
-  // Ensure all seeds are positive
-  const minSeed = Math.min(...seeds);
-  if (minSeed < 1) {
-    const adjustment = 1 - minSeed;
-    for (let i = 0; i < 8; i++) {
-      seeds[i] += adjustment;
-    }
-    // Adjust the last seed to maintain target sum
-    seeds[7] -= adjustment * 8;
   }
   
   // Final verification: ensure sum is exactly target
