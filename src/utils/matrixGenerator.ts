@@ -48,29 +48,36 @@ function checkLatinSquareProperty(matrix: Matrix, target: number): boolean {
 }
 
 // Generate forcing matrix using classic Latin square construction
-export function generateForcingMatrix(target: number): Matrix {
-  // Correct forcing matrix algorithm with dramatic variance
+export function generateForcingMatrix(target: number, variance: number = 0.5): Matrix {
+  // Correct forcing matrix algorithm with adjustable variance
   // Choose 8 seed numbers (4 for rows, 4 for columns) that sum to target
+  // variance: 0 = minimal variance, 1 = maximum variance
   
-  // Step 1: Generate 8 highly diverse seed numbers that sum to target
+  // Step 1: Generate 8 diverse seed numbers that sum to target
   const baseValue = Math.floor(target / 8);
   const remainder = target % 8;
   
-  // Create much more diverse seed values with wider range
+  // Create seed values with adjustable variance
   const seeds: number[] = [];
   
-  // Use a much wider range for dramatic variance
-  seeds[0] = baseValue - 4;  // Much lower
-  seeds[1] = baseValue - 2;  // Lower
-  seeds[2] = baseValue + 3;  // Higher
-  seeds[3] = baseValue + 1;  // Slightly higher
-  seeds[4] = baseValue + 5;  // Much higher
-  seeds[5] = baseValue - 1;  // Slightly lower
-  seeds[6] = baseValue + 2;  // Higher
-  seeds[7] = baseValue - 4;  // Much lower
+  // Calculate variance multiplier (0 = minimal, 1 = maximum)
+  const varianceMultiplier = Math.max(0, Math.min(1, variance));
+  
+  // Define variance ranges based on target size
+  const maxVariance = Math.max(1, Math.floor(target / 20)); // Scale with target
+  const varianceRange = Math.floor(maxVariance * varianceMultiplier);
+  
+  // Use adjustable variance range
+  seeds[0] = baseValue - varianceRange * 2;  // Much lower
+  seeds[1] = baseValue - varianceRange;      // Lower
+  seeds[2] = baseValue + varianceRange * 1.5; // Higher
+  seeds[3] = baseValue + varianceRange * 0.5; // Slightly higher
+  seeds[4] = baseValue + varianceRange * 2.5; // Much higher
+  seeds[5] = baseValue - varianceRange * 0.5; // Slightly lower
+  seeds[6] = baseValue + varianceRange;      // Higher
+  seeds[7] = baseValue - varianceRange * 2;  // Much lower
   
   // Distribute remainder to make sum exactly target
-  // Add remainder to middle seeds to maintain balance
   for (let i = 0; i < remainder; i++) {
     seeds[2 + i] += 1; // Add to middle seeds
   }
@@ -134,8 +141,8 @@ export function getValidationMessage(matrix: Matrix, target: number): string {
 }
 
 // Reset matrix to initial state
-export function resetMatrix(target: number): Matrix {
-  return generateForcingMatrix(target);
+export function resetMatrix(target: number, variance: number = 0.5): Matrix {
+  return generateForcingMatrix(target, variance);
 }
 
 // Copy matrix to clipboard

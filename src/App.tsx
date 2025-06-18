@@ -14,6 +14,7 @@ import './styles/main.css';
 
 function App() {
   const [target, setTarget] = useState(100);
+  const [variance, setVariance] = useState(0.5); // 0 = minimal variance, 1 = maximum variance
   const [matrix, setMatrix] = useState<Matrix>([]);
   const [isValid, setIsValid] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
@@ -34,6 +35,13 @@ function App() {
     }
   }, []);
 
+  // Regenerate matrix when variance changes
+  useEffect(() => {
+    if (target >= 1 && target <= 9999 && matrix.length > 0) {
+      generateMatrix();
+    }
+  }, [variance]);
+
   // Validate matrix whenever it changes
   useEffect(() => {
     if (matrix.length > 0) {
@@ -52,17 +60,21 @@ function App() {
     await new Promise(resolve => setTimeout(resolve, 100));
     
     try {
-      const newMatrix = generateForcingMatrix(target);
+      const newMatrix = generateForcingMatrix(target, variance);
       setMatrix(newMatrix);
     } catch (error) {
       console.error('Error generating matrix:', error);
     } finally {
       setIsGenerating(false);
     }
-  }, [target]);
+  }, [target, variance]);
 
   const handleTargetChange = (newTarget: number) => {
     setTarget(newTarget);
+  };
+
+  const handleVarianceChange = (newVariance: number) => {
+    setVariance(newVariance);
   };
 
   const handleCellChange = useCallback((row: number, col: number, value: number) => {
@@ -74,7 +86,7 @@ function App() {
 
   const handleReset = () => {
     if (target >= 1 && target <= 9999) {
-      const newMatrix = resetMatrix(target);
+      const newMatrix = resetMatrix(target, variance);
       setMatrix(newMatrix);
     }
   };
@@ -118,6 +130,28 @@ function App() {
         onGenerate={generateMatrix}
         disabled={isGenerating}
       />
+
+      {/* Variance Slider */}
+      <div className="variance-control">
+        <label htmlFor="variance-slider" className="variance-label">
+          Number Variance: {Math.round(variance * 100)}%
+        </label>
+        <input
+          id="variance-slider"
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={variance}
+          onChange={(e) => handleVarianceChange(parseFloat(e.target.value))}
+          className="variance-slider"
+          disabled={isGenerating}
+        />
+        <div className="variance-labels">
+          <span>Similar Numbers</span>
+          <span>Varied Numbers</span>
+        </div>
+      </div>
 
       {matrix.length > 0 && (
         <>
