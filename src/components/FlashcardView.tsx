@@ -47,6 +47,9 @@ const FlashcardView: React.FC<FlashcardViewProps> = ({ objects, onBack }) => {
   const rowObjectsFiltered = rowObjects.filter((_, index) => index !== currentCol);
   const columnObjectsFiltered = columnObjects.filter((_, index) => index !== currentRow);
 
+  // Combine all other objects into a single list (removing duplicates)
+  const allOtherObjects = new Set([...rowObjectsFiltered, ...columnObjectsFiltered]);
+
   return (
     <div className="flashcard-view">
       <div className="flashcard-header">
@@ -83,21 +86,9 @@ const FlashcardView: React.FC<FlashcardViewProps> = ({ objects, onBack }) => {
           </div>
           <div className="flashcard-back">
             <div className="flashcard-content">
-              <h3>Row {currentRow + 1} Objects:</h3>
+              <h3>Other Objects in Same Row & Column:</h3>
               <div className="object-list">
-                {rowObjectsFiltered.map((obj, index) => (
-                  <span 
-                    key={index} 
-                    className="object-item"
-                  >
-                    {obj}
-                  </span>
-                ))}
-              </div>
-              
-              <h3>Column {currentCol + 1} Objects:</h3>
-              <div className="object-list">
-                {columnObjectsFiltered.map((obj, index) => (
+                {Array.from(allOtherObjects).map((obj, index) => (
                   <span 
                     key={index} 
                     className="object-item"
