@@ -32,10 +32,6 @@ const ObjectInput: React.FC<ObjectInputProps> = ({ onObjectsSubmit, disabled = f
   return (
     <div className="object-input">
       <h3>Enter Your 16 Objects</h3>
-      <p className="subtitle">
-        Enter 16 objects that will be assigned to the matrix grid. 
-        Objects will be placed left-to-right, top-to-bottom.
-      </p>
       
       <div className="object-grid">
         {objects.map((object, index) => (
