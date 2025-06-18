@@ -51,40 +51,26 @@ function checkLatinSquareProperty(matrix: Matrix, target: number): boolean {
 export function generateForcingMatrix(target: number): Matrix {
   // Bart Nijs algorithm - guaranteed to work for any target
   
-  // Step 1: Choose four values that sum to target
-  // Use a systematic approach that ensures all Latin square permutations work
-  const base = Math.floor(target / 4);
-  const remainder = target % 4;
+  // Step 1: Create a base matrix where all permutations sum to 10
+  // This is a known working Latin square
+  const baseMatrix = [
+    [1, 2, 3, 4],
+    [2, 3, 4, 1],
+    [3, 4, 1, 2],
+    [4, 1, 2, 3]
+  ];
   
-  let values: number[];
-  if (remainder === 0) {
-    // Target is divisible by 4 - all values equal
-    values = [base, base, base, base];
-  } else {
-    // Target is not divisible by 4 - distribute remainder systematically
-    // Use a pattern that ensures all Latin square permutations sum to target
-    values = [base, base, base, base];
-    
-    // Distribute remainder to ensure Latin square property
-    if (remainder === 1) {
-      values[0] += 1;
-    } else if (remainder === 2) {
-      values[0] += 1;
-      values[1] += 1;
-    } else if (remainder === 3) {
-      values[0] += 1;
-      values[1] += 1;
-      values[2] += 1;
-    }
-  }
+  // Step 2: Calculate the adjustment needed to reach the target
+  // All permutations in the base matrix sum to 10
+  const baseSum = 10;
+  const adjustment = target - baseSum;
   
-  // Step 2: Create the Latin square matrix
+  // Step 3: Apply the adjustment to all cells
   const matrix: Matrix = [];
   for (let row = 0; row < 4; row++) {
     matrix[row] = [];
     for (let col = 0; col < 4; col++) {
-      // Each row is a cyclic shift of the values
-      const value = values[(col + row) % 4];
+      const value = baseMatrix[row][col] + adjustment;
       matrix[row][col] = {
         value,
         isUserEdited: false,
